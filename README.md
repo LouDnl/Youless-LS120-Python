@@ -1,11 +1,11 @@
-## WORK IN PROGRESS
+# WORK IN PROGRESS
 I am still developing this script. \
 Shown here is only the current version for backup. \
 The scripts are still full of debug logs and commented out test code.
 
-## Youless-LS120
+# Youless-LS120
 
-# Functions:
+## Functions:
  - Import and process Energy data from Youless LS120 into SQLite3 database 
 	- Data is stored as text
 	- *overwrites existing data but appends new data*
@@ -16,7 +16,7 @@ The scripts are still full of debug logs and commented out test code.
 	- Shown data is fixed to what is asked for in plotEnergy.py > dashtest()
 	- webpage is only locally available to where the script is executed
 
-# To Do:
+## To Do:
  - Add extra notations for more clarity
  - Add GAS usage
  - Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append
@@ -32,4 +32,4 @@ The scripts are still full of debug logs and commented out test code.
  
 # Some example views
 ![Year overview](year.png)\
-![Day overview](day.png)\ 
+![Day overview](day.png) 
