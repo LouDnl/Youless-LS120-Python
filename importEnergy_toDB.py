@@ -17,8 +17,8 @@ days = (range(1,32,1))   # url days
 hours = (range(1,25,1))  # url hours
 years = (range(2020, 2031, 1)) # years
 date_now = dt
-current_date = ("{:4d}{:02d}{:02d}".format(dt.year,dt.month,dt.day))
-current_time = ("{:02d}{:02d}{:02d}".format(dt.hour,dt.minute,dt.second))
+current_date = ("{:4d}-{:02d}-{:02d}".format(dt.year,dt.month,dt.day))
+current_time = ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
 month_now = date_now.month
 year_now = date_now.year #% 100 # last two digits
 last_year = date_now.year-1 # last year
@@ -28,6 +28,16 @@ last_year = date_now.year-1 # last year
 path = "t:\\workspaces\\Atom\\Youless\\"
 dbname = "youless.db"
 
+# enable debug messages
+DEBUG = True
+def log(s):
+    """
+    Usage:
+    log(lambda: "TEXT")
+    log(lambda: "TEXT and %s" % variable)
+    """
+    if DEBUG:
+        print(s())
 
 class parseData:
 
@@ -49,12 +59,12 @@ class parseData:
         self.conn = None
         try:
             self.conn = sl.connect(db_file)
-            print("Connected to: ", db_file)
+            log(lambda: ("Connected to: {}".format(db_file)))
         except Error as e:
-            print(e)
+            log(lambda: e)
         return self.conn
 
-    def insert_dayhours(self, conn, insertion):
+    def insert_dayhours(self, conn, insertion, today):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, week, month, monthname, day, yearday, values per hour
@@ -67,18 +77,27 @@ class parseData:
                     INSERT OR REPLACE INTO dayhours_e(date,year,week,month,monthname,day,yearday,watt)
                     VALUES(?,?,?,?,?,?,?,?)
                   '''
+        self.query = '''
+                     SELECT EXISTS(SELECT 1 FROM dayhours_e WHERE date=? COLLATE NOCASE) LIMIT 1
+                     '''
+        self.date = (insertion[0].strip(),) # create primary key check
         cur = conn.cursor()
+        self.check = cur.execute(self.query, self.date) # check the database for existing primary keys
+        if (self.check.fetchone()[0] == 1) and (insertion[0] != today): # check if the primary key exists and is not the current month
+            log(lambda: "Primary key %s exists, skipping!" % insertion[0])
+            return
+        else:
+            log(lambda: "Primary key %s equals current date %s. Overwriting and appending data!" % (insertion[0], today))
         try:
             cur.execute(self.sql, insertion)
-            print("Updating dayhours database with:")
-            print(insertion)
-        except IntegrityError as error: # has no use at the moment because of default replace if exists function
-            print("Value exists, skipping...")
+            log(lambda: "Updating the database with: {}".format(insertion))
+        except Exception as E:
+            log(lambda: "An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
             pass
         conn.commit()
         return cur.lastrowid
 
-    def insert_yeardays(self, conn, insertion):
+    def insert_yeardays(self, conn, insertion, monthnow):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, month, monthname, values per day
@@ -92,13 +111,33 @@ class parseData:
                     INSERT OR REPLACE INTO yeardays_e(date,year,month,monthname,kwh)
                     VALUES(?,?,?,?,?)
                    '''
+        self.query = '''
+                     SELECT EXISTS(SELECT 1 FROM yeardays_e WHERE date=? COLLATE NOCASE) LIMIT 1
+                     '''
+        self.date = (insertion[0].strip(),) # create primary key check
+
         cur = conn.cursor()
+        self.check = cur.execute(self.query, self.date) # check the database for existing primary keys
+
+        # log(lambda: type(insertion))
+        # log(lambda: insertion[0]) # returns the primary key
+        # log(lambda: self.check.fetchone()[0]) # returns 1 if primary key exists
+        # log(lambda: monthnow) # returns the month now check
+
+        if (self.check.fetchone()[0] == 1) and (insertion[0] != monthnow): # check if the primary key exists and is not the current month
+            log(lambda: "Primary key %s exists, skipping!" % insertion[0])
+            return
+        else:
+            log(lambda: "Primary key %s equals current month %s. Overwriting and appending data!" % (insertion[0], monthnow))
+
+        # if (insertion[0] == monthnow): # check if the primary key is the same as the current month
+        #     log(lambda: "We have a hit! %s" % insertion[0])
+
         try:
             cur.execute(self.sql, insertion)
-            print("Updating yeardays database with:")
-            print(insertion)
-        except IntegrityError as error: # has no use at the moment because of default replace if exists function
-            print("Value exists, skipping...")
+            log(lambda: "Updating the database with: {}".format(insertion))
+        except Exception as E:
+            log(lambda: "An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
             pass
         conn.commit()
         return cur.lastrowid
@@ -143,11 +182,11 @@ class parseData:
             strlst = '{}'.format(lst)
 
             task = (str(date),int(year),int(weekNo),int(monthNo),monthName,int(monthDay),int(yearDay),strlst)
-            self.insert_dayhours(self.conn, task)
+            self.insert_dayhours(self.conn, task, current_date)
             lst.clear()
             self.counter -= 1
         self.conn.close()
-        print("Database connection closed...")
+        log(lambda: "Database connection closed...")
 
     def parseMonths(self):
         """
@@ -166,6 +205,7 @@ class parseData:
             year = jsonDate.date().strftime('%Y')
             monthNo = jsonDate.date().strftime('%m')
             monthName = jsonDate.date().strftime('%B')
+            thismonth = dt.strftime('%Y-%m-01')
             rawValues = readapi['val']
             lst = []
             for y, s in enumerate(rawValues):
@@ -182,11 +222,12 @@ class parseData:
                 lst.pop()
             strlst = '{}'.format(lst)
             task = (str(date),int(year),int(monthNo),monthName,strlst)
-            self.insert_yeardays(self.conn, task)
+            # log(lambda: task)
+            self.insert_yeardays(self.conn, task, str(thismonth))
             lst.clear()
             self.counter -= 1
         self.conn.close()
-        print("Database connection closed...")
+        log(lambda: "Database connection closed...")
 
 def main():
     parseData().parseDays()

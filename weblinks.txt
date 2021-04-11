@@ -1,0 +1,12 @@
+http://192.168.0.40/
+
+/a?f=j # live stats
+
+/a? # main stats - pwr = live current usage
+/V? # url year, week, day, hour
+/W? # url year, week, day
+f=j& # enable json
+m= # url represented in months, history goes to next month
+d= # url represented in weeks, history goes to next week
+w=  # url represented in 3 parts, shows only one day 24hrs back up to current hour
+h= # url represented in 20 parts of one hour counting back from the current moment
