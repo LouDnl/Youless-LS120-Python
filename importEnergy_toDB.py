@@ -4,6 +4,7 @@ from requests import get
 import calendar
 import sqlite3 as sl
 from sqlite3 import IntegrityError
+import ast # for converting string representation of a list to a list
 
 sys.stdin.reconfigure(encoding='utf-8') # set encoding
 sys.stdout.reconfigure(encoding='utf-8') # set encoding
@@ -22,6 +23,9 @@ current_time = ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
 month_now = date_now.month
 year_now = date_now.year #% 100 # last two digits
 last_year = date_now.year-1 # last year
+lowMonths = (4,6,9,11)
+highMonths = (1,3,5,7,8,10,12)
+excMonth = 2
 
 # path and file naming
 # cwd = os.getcwd() # get current working directory
@@ -64,7 +68,7 @@ class parseData:
             log(lambda: e)
         return self.conn
 
-    def insert_dayhours(self, conn, insertion, today):
+    def insert_dayhours(self, conn, insertion):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, week, month, monthname, day, yearday, values per hour
@@ -83,11 +87,15 @@ class parseData:
         self.date = (insertion[0].strip(),) # create primary key check
         cur = conn.cursor()
         self.check = cur.execute(self.query, self.date) # check the database for existing primary keys
-        if (self.check.fetchone()[0] == 1) and (insertion[0] != today): # check if the primary key exists and is not the current month
+
+        x = insertion[7] # x is string representation of list
+        x = ast.literal_eval(x) # convert x to real list
+
+        if (self.check.fetchone()[0] == 1) and (len(x) == 24): # check if the primary key exists and list has 24 hour values
             log(lambda: "Primary key %s exists, skipping!" % insertion[0])
             return
         else:
-            log(lambda: "Primary key %s equals current date %s. Overwriting and appending data!" % (insertion[0], today))
+            log(lambda: "Primary key %s has less then 24 entries. Overwriting and appending data!" % insertion[0])
         try:
             cur.execute(self.sql, insertion)
             log(lambda: "Updating the database with: {}".format(insertion))
@@ -97,7 +105,7 @@ class parseData:
         conn.commit()
         return cur.lastrowid
 
-    def insert_yeardays(self, conn, insertion, monthnow):
+    def insert_yeardays(self, conn, insertion, thismonth):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, month, monthname, values per day
@@ -124,15 +132,30 @@ class parseData:
         # log(lambda: self.check.fetchone()[0]) # returns 1 if primary key exists
         # log(lambda: monthnow) # returns the month now check
 
-        if (self.check.fetchone()[0] == 1) and (insertion[0] != monthnow): # check if the primary key exists and is not the current month
-            log(lambda: "Primary key %s exists, skipping!" % insertion[0])
-            return
+        x = insertion[4] # x is string representation of list
+        x = ast.literal_eval(x) # convert x to real list
+        # log(lambda: x)
+        # log(lambda: len(x))
+        m = int(insertion[2])
+
+        if (self.check.fetchone()[0] == 1) and (insertion[0] != thismonth): # check if the primary key exists and is not the current month
+            if (m in lowMonths) and (len(x) == 30):
+                log(lambda: "Primary key %s exists, should have 30 days and has %i days, skipping!" % (insertion[0], len(x)))
+                return
+            elif (m in highMonths) and (len(x) == 31):
+                log(lambda: "Primary key %s exists, should have 31 days and has %i days, skipping!" % (insertion[0], len(x)))
+                return
+            elif (m == excMonth) and (len(x) >= 28):
+                log(lambda: "Primary key %s exists, should have 28 or 29 days and has %i days, skipping!" % (insertion[0], len(x)))
+                return
+            else:
+                log(lambda: "Month not complete, continuing")
         else:
-            log(lambda: "Primary key %s equals current month %s. Overwriting and appending data!" % (insertion[0], monthnow))
+            log(lambda: "Primary key %s equals month %s and is not complete. Overwriting and appending data!" % (insertion[0], thismonth))
 
         # if (insertion[0] == monthnow): # check if the primary key is the same as the current month
         #     log(lambda: "We have a hit! %s" % insertion[0])
-
+        #
         try:
             cur.execute(self.sql, insertion)
             log(lambda: "Updating the database with: {}".format(insertion))
@@ -182,7 +205,7 @@ class parseData:
             strlst = '{}'.format(lst)
 
             task = (str(date),int(year),int(weekNo),int(monthNo),monthName,int(monthDay),int(yearDay),strlst)
-            self.insert_dayhours(self.conn, task, current_date)
+            self.insert_dayhours(self.conn, task)
             lst.clear()
             self.counter -= 1
         self.conn.close()
