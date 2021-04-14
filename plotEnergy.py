@@ -2,12 +2,13 @@ import sys, os, datetime, re, time
 import calendar
 import sqlite3 as sl
 from sqlite3 import IntegrityError
+import ast # for converting string representation of a list to a list
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 
-DEBUG = True
+DEBUG = False
 def log(s):
     """
     Usage:
@@ -73,19 +74,21 @@ class retrieveData:
             if (rows >= 1):
                 data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
                 for row in data:
-                    tmp = row[7]
-                    tmp = tmp.replace(" ", "")
-                    tmp = tmp.replace("[", "")
-                    tmp = tmp.replace("]", "")
-                    tmp = tmp.split(',')
-                    for v, n in enumerate(tmp):
-                        tmp[v] = float(tmp[v])
+                    self.values = row[7] # x is string representation of list
+                    self.values = ast.literal_eval(self.values) # convert x to real list
+                #     tmp = row[7]
+                #     tmp = tmp.replace(" ", "")
+                #     tmp = tmp.replace("[", "")
+                #     tmp = tmp.replace("]", "")
+                #     tmp = tmp.split(',')
+                    for v, n in enumerate(self.values):
+                        self.values[v] = float(self.values[v])
             else:
                 return 0
 
         self.conn.close()
 
-        self.values = tmp[:]
+        # self.values = tmp[:]
         self.lst = [self.year,self.month,self.day,self.values]
         log(lambda: "Retrieved list:")
         log(lambda: self.lst)
@@ -109,19 +112,21 @@ class retrieveData:
             if (rows >= 1):
                 data = self.conn.execute(self.query)
                 for row in data:
-                    tmp = row[4]
-                    tmp = tmp.replace(" ", "")
-                    tmp = tmp.replace("[", "")
-                    tmp = tmp.replace("]", "")
-                    tmp = tmp.split(',')
-                    for v, n in enumerate(tmp):
-                        tmp[v] = float(tmp[v])
+                    self.values = row[4] # x is string representation of list
+                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    # tmp = row[4]
+                    # tmp = tmp.replace(" ", "")
+                    # tmp = tmp.replace("[", "")
+                    # tmp = tmp.replace("]", "")
+                    # tmp = tmp.split(',')
+                    for v, n in enumerate(self.values):
+                        self.values[v] = float(self.values[v])
             else:
                 return 0
 
         self.conn.close()
 
-        self.values = tmp[:] # copy tmp list to values list
+        # self.values = tmp[:] # copy tmp list to values list
         self.lst = [self.year,self.month,self.values]
         log(lambda: "Retrieved list:")
         log(lambda: self.lst)
@@ -153,21 +158,23 @@ class retrieveData:
                 data = self.conn.execute(self.query)
                 self.lst = []
                 for row in data:
-                    tmp = row[4]
-                    tmp = tmp.replace(" ", "")
-                    tmp = tmp.replace("[", "")
-                    tmp = tmp.replace("]", "")
-                    tmp = tmp.split(',')
+                    self.values = row[4] # x is string representation of list
+                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    # tmp = row[4]
+                    # tmp = tmp.replace(" ", "")
+                    # tmp = tmp.replace("[", "")
+                    # tmp = tmp.replace("]", "")
+                    # tmp = tmp.split(',')
                     total = 0
-                    for v, n in enumerate(tmp):
-                        tmp[v] = float(tmp[v])
-                        total += float(tmp[v])
+                    for v, n in enumerate(self.values):
+                        self.values[v] = float(self.values[v])
+                        total += float(self.values[v])
                     if (self.type == 1): # month totals
-                        tmplst = [[row[1], row[2], row[3], int(total)]]
+                        self.tmplst = [[row[1], row[2], row[3], int(total)]]
                     elif (self.type == 2): # day totals
-                        tmplst = [[row[1], row[2], row[3], tmp]]
-                    self.lst.extend(tmplst)
-                    tmplst.clear()
+                        self.tmplst = [[row[1], row[2], row[3], self.values]]
+                    self.lst.extend(self.tmplst)
+                    self.tmplst.clear()
             else:
                 return 0
 
@@ -340,7 +347,10 @@ def dashtest():
     app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
 
 def main(*kwargs):
-    dashtest()
+    # retrieveData().retrieve_day(2021,2,27)
+    # retrieveData().retrieve_year(2021,2)
+    # dashtest()
+    log(lambda: "Nothing to see here!")
 
 if __name__ == '__main__':
         main()

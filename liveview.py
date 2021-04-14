@@ -1,5 +1,5 @@
 #defaults
-import sys, os, datetime, re, time
+import sys, os, datetime, re, time, sched
 
 # dataFrame structure
 # import pandas as pd
@@ -13,6 +13,10 @@ import requests
 
 # json
 import json
+
+# enable multithreading / asyncio
+from threading import *
+import asyncio
 
 # enable debug messages
 DEBUG = True
@@ -101,7 +105,23 @@ class plotLiveData:
         from dash.dependencies import Input, Output
 
         from datetime import datetime
+        dt = datetime.today() # get current datetime
+        day_now = dt.day
+        month_now = dt.month
+        year_now = dt.year #% 100 # last two digits
+        last_year = dt.year-1 # last year
+
         import locale
+
+        import plotEnergy
+
+        d_today = plotEnergy.plotData().plot_day_hour(year_now,month_now,day_now)
+        d_yesterday = plotEnergy.plotData().plot_day_hour(year_now,month_now,day_now-1)
+        d_currmonth = plotEnergy.plotData().plot_year_month(2021,4)
+        d_year1 = plotEnergy.plotData().plot_year(2020)
+        d_year2 = plotEnergy.plotData().plot_year(2021)
+        d_fullyear1 = plotEnergy.plotData().plot_year_day(2020)
+        d_fullyear2 = plotEnergy.plotData().plot_year_day(2021)
 
         locale.setlocale(locale.LC_ALL, 'nl_NL')
 
@@ -111,6 +131,13 @@ class plotLiveData:
             # dcc.Graph(id="graph", figure=fig),
             dcc.Graph(id="liveGraph"),
             dcc.Graph(id="minuteGraph"),
+            dcc.Graph(figure=d_today),
+            dcc.Graph(figure=d_yesterday),
+            dcc.Graph(figure=d_currmonth),
+            dcc.Graph(figure=d_year1),
+            dcc.Graph(figure=d_year2),
+            dcc.Graph(figure=d_fullyear1),
+            dcc.Graph(figure=d_fullyear2),
             dcc.Interval(
                 id='interval-component-live',
                 interval=5*1000, # 5 seconds in milliseconds
@@ -204,10 +231,32 @@ class plotLiveData:
 
         app.run_server(debug=True, host='192.168.0.5')
 
+def updateDB():
+    # date = (dt.strftime("%A %d %B %Y"))
+    # dt = datetime.now() # current datetime
+    # time = (dt.strftime("%H:%M:%S"))
+    s = sched.scheduler(time.time, time.sleep)
+    def run_update(sc):
+        log(lambda: "Updating the database")
+        # print("TEST")
+        s.enter(60, 1, run_update, (sc,))
+    log(lambda: "Starting the scheduler")
+    s.enter(60, 1, run_update, (s,))
+    s.run()
+
 def main():
     # readLiveData().readHours()
     # readLiveData().readLive()
-    plotLiveData().plotLive()
+    plot = Thread(target=plotLiveData().plotLive())
+    # update = Thread(target=updateDB())
+    # asyncio.run(updateDB())
+    # asyncio.run(plotLiveData().plotLive())
+    updateDB()
+    plot.start()
+
+
+
+
 
 if __name__ == '__main__':
     main()

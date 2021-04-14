@@ -23,9 +23,9 @@ current_time = ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
 month_now = date_now.month
 year_now = date_now.year #% 100 # last two digits
 last_year = date_now.year-1 # last year
-lowMonths = (4,6,9,11)
-highMonths = (1,3,5,7,8,10,12)
-excMonth = 2
+# lowMonths = (4,6,9,11)
+# highMonths = (1,3,5,7,8,10,12)
+# excMonth = 2
 
 # path and file naming
 # cwd = os.getcwd() # get current working directory
@@ -77,25 +77,71 @@ class parseData:
         INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
         INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
+        # log(lambda: "Opening table dayhours_e")
         self.sql = '''
                     INSERT OR REPLACE INTO dayhours_e(date,year,week,month,monthname,day,yearday,watt)
                     VALUES(?,?,?,?,?,?,?,?)
                   '''
+        # self.query = '''
+        #              SELECT EXISTS(SELECT 1 FROM dayhours_e WHERE date=? COLLATE NOCASE) LIMIT 1
+        #              '''
         self.query = '''
-                     SELECT EXISTS(SELECT 1 FROM dayhours_e WHERE date=? COLLATE NOCASE) LIMIT 1
+                     SELECT * FROM dayhours_e WHERE date=?
                      '''
-        self.date = (insertion[0].strip(),) # create primary key check
+        self.datequery = (insertion[0].strip(),) # create primary key check
+        self.date = insertion[0] # create primary key check
+
         cur = conn.cursor()
-        self.check = cur.execute(self.query, self.date) # check the database for existing primary keys
+        self.check = cur.execute(self.query, self.datequery) # check the database for existing primary keys
 
         x = insertion[7] # x is string representation of list
         x = ast.literal_eval(x) # convert x to real list
+        lenX = len(x)
 
-        if (self.check.fetchone()[0] == 1) and (len(x) == 24): # check if the primary key exists and list has 24 hour values
-            log(lambda: "Primary key %s exists, skipping!" % insertion[0])
+        existingEntry = self.check.fetchall() # fetch the complete entry from the database
+
+        try:
+            existingKey = existingEntry[0][0] # assign existing key
+            existingValues = existingEntry[0][7] # assign existing value string
+            existingValues = ast.literal_eval(existingValues) # convert string representation of list to real list
+            first_set = set(existingValues) # create set from existing values
+            sec_set = set(x) # create set from new values
+            differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
+            differences = len(differences)
+        except:
+            log(lambda: "no existing Primary Key for {}".format(insertion[0]))
+            if ('existingKey' not in locals()):
+                log(lambda: "existingKey variable was not created, assigning None")
+                existingKey = None
+
+        # for i in existingValues:
+        #     i = float(i)
+
+        # log(lambda: type(existingValues[0]))
+        # log(lambda: type(x[0]))
+        # log(lambda: x)
+        # log(lambda: existingValues)
+
+        #log(lambda: first_set)
+
+        #log(lambda: sec_set)
+
+        # log(lambda: differences)
+
+        # log(lambda: differences)
+        # log(lambda: len(differences)) # check if there are 1 ore more differences
+
+        if (existingKey is not None) and (differences == 0): # check if the primary key exists and list has 24 hour values
+            log(lambda: "Primary key %s exists, has %i entries and %i differences, skipping!" % (self.date, lenX, differences))
+            # for i in x:
+            #     log(lambda: i)
+            # log(lambda: self.check2.fetchone())
             return
         else:
-            log(lambda: "Primary key %s has less then 24 entries. Overwriting and appending data!" % insertion[0])
+            try:
+                log(lambda: "Primarykey %s has %i entries and/or %i differences. Overwriting and appending data!" % (self.date, lenX, differences))
+            except:
+                log(lambda: "Primarykey did not exist. Creating new entry")
         try:
             cur.execute(self.sql, insertion)
             log(lambda: "Updating the database with: {}".format(insertion))
@@ -114,18 +160,22 @@ class parseData:
         INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
         INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
-
+        # log(lambda: "Opening table yeardays_e")
         self.sql = '''
                     INSERT OR REPLACE INTO yeardays_e(date,year,month,monthname,kwh)
                     VALUES(?,?,?,?,?)
                    '''
+        # self.query = '''
+        #              SELECT EXISTS(SELECT 1 FROM yeardays_e WHERE date=? COLLATE NOCASE) LIMIT 1
+        #              '''
         self.query = '''
-                     SELECT EXISTS(SELECT 1 FROM yeardays_e WHERE date=? COLLATE NOCASE) LIMIT 1
+                     SELECT * FROM yeardays_e WHERE date=?
                      '''
-        self.date = (insertion[0].strip(),) # create primary key check
+        self.datequery = (insertion[0].strip(),) # create primary key check
+        self.date = insertion[0] # create primary key check
 
         cur = conn.cursor()
-        self.check = cur.execute(self.query, self.date) # check the database for existing primary keys
+        self.check = cur.execute(self.query, self.datequery) # check the database for existing primary keys
 
         # log(lambda: type(insertion))
         # log(lambda: insertion[0]) # returns the primary key
@@ -134,28 +184,67 @@ class parseData:
 
         x = insertion[4] # x is string representation of list
         x = ast.literal_eval(x) # convert x to real list
-        # log(lambda: x)
-        # log(lambda: len(x))
+        lenX = len(x)
+
         m = int(insertion[2])
 
-        if (self.check.fetchone()[0] == 1) and (insertion[0] != thismonth): # check if the primary key exists and is not the current month
-            if (m in lowMonths) and (len(x) == 30):
-                log(lambda: "Primary key %s exists, should have 30 days and has %i days, skipping!" % (insertion[0], len(x)))
-                return
-            elif (m in highMonths) and (len(x) == 31):
-                log(lambda: "Primary key %s exists, should have 31 days and has %i days, skipping!" % (insertion[0], len(x)))
-                return
-            elif (m == excMonth) and (len(x) >= 28):
-                log(lambda: "Primary key %s exists, should have 28 or 29 days and has %i days, skipping!" % (insertion[0], len(x)))
-                return
-            else:
-                log(lambda: "Month not complete, continuing")
+        existingEntry = self.check.fetchall() # fetch the complete entry from the database
+
+        try:
+            existingKey = existingEntry[0][0] # assign existing key
+            existingValues = existingEntry[0][4] # assign existing value string
+            existingValues = ast.literal_eval(existingValues) # convert string representation of list to real list
+            first_set = set(existingValues) # create set from existing values
+            sec_set = set(x) # create set from new values
+            differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
+            differences = len(differences)
+        except:
+            log(lambda: "no existing Primary Key for {}".format(insertion[0]))
+            if ('existingKey' not in locals()):
+                log(lambda: "existingKey variable was not created, assigning None")
+                existingKey = None
+
+        # existingKey = existingEntry[0][0] # assign existing key
+        # existingValues = existingEntry[0][4] # assign existing value string
+        # existingValues = ast.literal_eval(existingValues) # convert string representation of list to real list
+
+        # first_set = set(existingValues) # create set from existing values
+        # log(lambda: first_set)
+        # sec_set = set(x) # create set from new values
+        # log(lambda: sec_set)
+        # differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
+        # log(lambda: differences)
+        # differences = len(differences)
+        # log(lambda: differences)
+
+        # if (existingEntry) and (insertion[0] != thismonth): # check if the primary key exists and is not the current month
+        #     if (differences == 0):
+        #         if (m in lowMonths) and (len(x) == 30):
+        #             log(lambda: "Primary key %s exists, should have 30 days and has %i days, skipping!" % (insertion[0], len(x)))
+        #             return
+        #         elif (m in highMonths) and (len(x) == 31):
+        #             log(lambda: "Primary key %s exists, should have 31 days and has %i days, skipping!" % (insertion[0], len(x)))
+        #             return
+        #         elif (m == excMonth) and (len(x) >= 28):
+        #             log(lambda: "Primary key %s exists, should have 28 or 29 days and has %i days, skipping!" % (insertion[0], len(x)))
+        #             return
+        #         else:
+        #             log(lambda: "Month not complete, continuing to update")
+        #     else:
+        #         log(lambda: "Month has %i differences, continuing to update" % differences)
+        if (existingKey is not None) and (differences == 0):
+            log(lambda: "Primary key %s exists and has %i differences, skipping!" % (insertion[0], differences))
+            return
         else:
-            log(lambda: "Primary key %s equals month %s and is not complete. Overwriting and appending data!" % (insertion[0], thismonth))
+            try:
+                log(lambda: "Primary key is %s and has %i differences. Overwriting and appending data!" % (insertion[0], differences))
+            except:
+                log(lambda: "Primarykey did not exist. Creating new entry")
 
         # if (insertion[0] == monthnow): # check if the primary key is the same as the current month
         #     log(lambda: "We have a hit! %s" % insertion[0])
         #
+
         try:
             cur.execute(self.sql, insertion)
             log(lambda: "Updating the database with: {}".format(insertion))
@@ -253,8 +342,8 @@ class parseData:
         log(lambda: "Database connection closed...")
 
 def main():
-    parseData().parseDays()
     parseData().parseMonths()
+    parseData().parseDays()
 
 if __name__ == '__main__':
     main()
