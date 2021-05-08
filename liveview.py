@@ -1,6 +1,6 @@
 #defaults
-import sys, os, datetime, re, time, sched
-
+import sys, os, datetime, re, time, sched, locale
+# from datetime import datetime
 # dataFrame structure
 # import pandas as pd
 
@@ -11,36 +11,47 @@ import plotly.express as px
 import requests
 # from requests import get
 
+# dash webpage
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+
 # json
 import json
 
 # enable multithreading / asyncio
-from threading import *
-import asyncio
+#from threading import *
+#import asyncio
+# from multiprocessing import Pool
+# from multiprocessing import Process
+# import _thread
 
-# enable debug messages
-DEBUG = True
-def log(s):
-    """
-    Usage:
-    log(lambda: "TEXT")
-    log(lambda: "TEXT and %s" % variable)
-    """
-    if DEBUG:
-        print(s())
+# import globals
+# import globals as gl
+from globals import *
+from plotEnergy import *
+import importData_toDB as db
+updateDB = 1
+while(updateDB):
+    db.main() # update database always at start
+    updateDB = 0
 
-# global variables
-cheeky = 0
+# set language
+locale.setlocale(locale.LC_ALL, Vars.web("LOCALE"))
 
 class readLiveData:
+
     def __init__(self):
-        self.__headers = { "Accept-Language": "en-US, en;q=0.5"} # acceptable html headers
-        self.__url = "http://192.168.0.40" # base url
-        self.__stats = "/a?"
-        self.__ele = "/V?" # url year, week, day, hour
-        # self.__gas = "/W?" # url year, week, day
-        self.__json = "f=j&"
-        self.__D = "h=" # url represented in 20 parts of half an hour counting back from the current moment
+        self.__headers = Vars.web("HEADERS") # acceptable html headers
+        self.__url = Vars.web("URL") # base url
+        self.__ele = Vars.web("ELE")
+        self.__gas = Vars.web("GAS")
+        self.__json = Vars.web("JSON")
+        self.__month = Vars.web("M")
+        self.__day = Vars.web("W")
+        self.__stats = Vars.web("STATS")
+        self.__D = Vars.web("D")
 
     def readLive(self):
         """
@@ -57,10 +68,10 @@ class readLiveData:
         Import per minute data from Youless 120
         Is always 1 minute behind live
         """
-        self.maxPage = 20
-        self.minPage = 1
-        self.maxMinute = 29
-        self.minMinute = 0
+        self.maxPage = Vars.web("maxMinutePage")
+        self.minPage = Vars.web("minMinutePage")
+        self.maxMinute = Vars.web("maxMinute")
+        self.minMinute = Vars.web("minMinute")
         self.counter = self.maxPage
         e = {}
         time = []
@@ -69,7 +80,7 @@ class readLiveData:
         while (self.counter >= self.minPage):
             self.api = requests.get(self.__url + self.__ele + self.__json + self.__D + str(self.counter)).json()
             # log(lambda: self.api)
-            self.date = datetime.datetime.strptime(self.api['tm'], '%Y-%d-%mT%H:%M:%S')
+            self.date = datetime.datetime.strptime(self.api['tm'], '%Y-%m-%dT%H:%M:%S')
             i = self.minMinute
             while (i <= self.maxMinute):
                 h = self.date.hour
@@ -81,7 +92,8 @@ class readLiveData:
                 self.watt = int(self.api['val'][i])
                 time.append(self.time)
                 watts.append(self.watt)
-                # log(lambda: 'Time: {} Usage: {} Watt'.format(self.time, self.watt))
+
+                dbg(lambda: 'Time: {} Usage: {} Watt'.format(self.time, self.watt))
                 i += 1
             # log(lambda: self.date)
             self.counter -= 1
@@ -90,54 +102,53 @@ class readLiveData:
         # log(lambda: e)
         return e
 
-class plotLiveData:
+class plotLiveData: # only plots Energy at the moment
 
     def __init__(self):
-        pass
+        global updateDB
+        updateDB = -1
 
-    def plotLive(self):
+        self.elist = Vars.conf('energytypes')['list']
+
+    def plotLive(self, ip, port):
         """
         Plot the live usage with plotly
         """
-        import dash
-        import dash_core_components as dcc
-        import dash_html_components as html
-        from dash.dependencies import Input, Output
+        self.ip = ip
+        self.port = port
 
         from datetime import datetime
         dt = datetime.today() # get current datetime
-        day_now = dt.day
-        month_now = dt.month
-        year_now = dt.year #% 100 # last two digits
-        last_year = dt.year-1 # last year
+        # dt = Runtime.dt
+        # day_now = dt.day
+        # month_now = dt.month
+        # year_now = dt.year #% 100 # last two digits
+        # last_year = dt.year-1 # last year
 
-        import locale
-
-        import plotEnergy
-
-        d_today = plotEnergy.plotData().plot_day_hour(year_now,month_now,day_now)
-        d_yesterday = plotEnergy.plotData().plot_day_hour(year_now,month_now,day_now-1)
-        d_currmonth = plotEnergy.plotData().plot_year_month(2021,4)
-        d_year1 = plotEnergy.plotData().plot_year(2020)
-        d_year2 = plotEnergy.plotData().plot_year(2021)
-        d_fullyear1 = plotEnergy.plotData().plot_year_day(2020)
-        d_fullyear2 = plotEnergy.plotData().plot_year_day(2021)
-
-        locale.setlocale(locale.LC_ALL, 'nl_NL')
+        # d_today = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now)
+        # d_yesterday = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1)
+        # d_currmonth = plotData().plot_year_month(Runtime.year_now, Runtime.month_now)
+        # d_lastmonth = plotData().plot_year_month(Runtime.year_now, Runtime.last_month)
+        # d_year1 = plotData().plot_year(Runtime.year_now)
+        # d_year2 = plotData().plot_year(Runtime.last_year)
+        # d_fullyear1 = plotData().plot_year_day(Runtime.year_now)
+        # d_fullyear2 = plotData().plot_year_day(Runtime.last_year)
 
         app = dash.Dash(__name__)
 
         app.layout = html.Div([
             # dcc.Graph(id="graph", figure=fig),
+            html.Span(id='updatedb', style={'visibility': 'hidden'}),
             dcc.Graph(id="liveGraph"),
             dcc.Graph(id="minuteGraph"),
-            dcc.Graph(figure=d_today),
-            dcc.Graph(figure=d_yesterday),
-            dcc.Graph(figure=d_currmonth),
-            dcc.Graph(figure=d_year1),
-            dcc.Graph(figure=d_year2),
-            dcc.Graph(figure=d_fullyear1),
-            dcc.Graph(figure=d_fullyear2),
+            dcc.Graph(id="d_today"),
+            dcc.Graph(id="d_yesterday"),
+            dcc.Graph(id="d_currmonth"),
+            dcc.Graph(id="d_lastmonth"),
+            dcc.Graph(id="d_year1"),
+            dcc.Graph(id="d_year2"),
+            dcc.Graph(id="d_fullyear1"),
+            dcc.Graph(id="d_fullyear2"),
             dcc.Interval(
                 id='interval-component-live',
                 interval=5*1000, # 5 seconds in milliseconds
@@ -146,6 +157,16 @@ class plotLiveData:
             dcc.Interval(
                 id='interval-component-minutes',
                 interval=60*1000, # 60 seconds in milliseconds
+                n_intervals=0
+            ),
+            dcc.Interval(
+                id='interval-component-halfhourly',
+                interval=3600*1000, # 3600 seconds (1 hour) in milliseconds
+                n_intervals=0
+            ),
+            dcc.Interval(
+                id='interval-component-hourly',
+                interval=1800*1000, # 1800 seconds (half hour) in milliseconds
                 n_intervals=0
             )#,
             # html.Pre(
@@ -158,6 +179,14 @@ class plotLiveData:
             # )
         ])
 
+        @app.callback(
+            # Output
+            Output('updatedb', 'children'),
+            Input('interval-component-halfhourly', 'n_intervals')
+        )
+        def updatedb(n):
+            db.main()
+            return
 
         livedict = {'timelst': [], 'wattlst': []} # dictionary for storing live data
         @app.callback(
@@ -179,8 +208,8 @@ class plotLiveData:
             livedict['wattlst'].append(live)
 
             total = l['cnt']
-            graphtitle = "Live verbruik: {} watt, {} {} uur ".format(live,date,time)
-
+            # graphtitle = "Live verbruik: {} watt, {} {} uur ".format(live,date,time)
+            graphtitle = Vars.lang('livegraphtitle').format(live,date,time)
             maxusage = max(livedict['wattlst'])
             # log(lambda: livedict)
 
@@ -191,8 +220,8 @@ class plotLiveData:
                 width = 500,
                 height = 500, #(maxusage + (maxusage / 3))
                 labels = {
-                    "x": "Time",
-                    "y": "Watts"
+                    "x": Vars.lang('T'),
+                    "y": Vars.lang('W')
                 }
             )
             return fig
@@ -209,16 +238,80 @@ class plotLiveData:
             live = e['watts'][-1]
             maxusage = max(e['watts'])
             # log(lambda: maxusage)
-            graphtitle = "Live verbruik per minuut: {} watt, {} {} uur ".format(live,date,time)
+            graphtitle = Vars.lang('liveminutegraphtitle').format(live,date,time)
             fig = px.line(
                 x = e['time'], y = e['watts'],
                 title=graphtitle,
                 height = 500, #(maxusage + (maxusage / 3))
                 labels = {
-                    "x": "Time",
-                    "y": "Watts"
+                    "x": Vars.lang('T'),
+                    "y": Vars.lang('W')
                 }
             )
+            return fig
+
+        @app.callback(
+            Output('d_today', 'figure'),
+            Input('interval-component-halfhourly', 'n_intervals')
+        )
+        def d_today(n):
+            fig = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_yesterday', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_yesterday(n):
+            fig = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_currmonth', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_currmonth(n):
+            fig = plotData().plot_month_day(Runtime.year_now, Runtime.month_now, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_lastmonth', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_lastmonth(n):
+            fig = plotData().plot_month_day(Runtime.year_now, Runtime.last_month, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_year1', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_year1(n):
+            fig = plotData().plot_year_month(Runtime.year_now, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_year2', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_year2(n):
+            fig = plotData().plot_year_month(Runtime.last_year, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_fullyear1', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_fullyear1(n):
+            fig = plotData().plot_year_day(Runtime.year_now, self.elist[0])
+            return fig
+
+        @app.callback(
+            Output('d_fullyear2', 'figure'),
+            Input('interval-component-hourly', 'n_intervals')
+        )
+        def d_fullyear2(n):
+            fig = plotData().plot_year_day(Runtime.last_year, self.elist[0])
             return fig
 
 
@@ -229,34 +322,41 @@ class plotLiveData:
         # def display_structure(fig_json):
         #     return json.dumps(fig_json, indent=2)
 
-        app.run_server(debug=True, host='192.168.0.5')
+        app.run_server(debug=True, host=ip, port=port)
 
-def updateDB():
-    # date = (dt.strftime("%A %d %B %Y"))
-    # dt = datetime.now() # current datetime
-    # time = (dt.strftime("%H:%M:%S"))
-    s = sched.scheduler(time.time, time.sleep)
-    def run_update(sc):
-        log(lambda: "Updating the database")
-        # print("TEST")
-        s.enter(60, 1, run_update, (sc,))
-    log(lambda: "Starting the scheduler")
-    s.enter(60, 1, run_update, (s,))
-    s.run()
+# def updateDB_nonworking(text):
+#     log(lambda: text)
+#     # while (1):
+#     # for _
+#     dt = datetime.datetime.now() # get current datetime
+#     uTime = (dt.strftime("%H:%M:%S")) # time in format hours:minutes:seconds
+#     mins = int(dt.strftime("%M"))
+#     quarters = (0,15,30,45)
+#     if (mins in quarters):
+#         log(lambda: "The time is {}".format(uTime))
+#         time.sleep(65) # 65 second wait so it doesn't get repeated
+#         updateDB("Restarting updateDB from quarters")
+#     time.sleep(65)
+#     updateDB("Restarting updateDB")
+#
+# count = 0
+# def updateDB():
+#     global count
+#     if (count == 0):
+#         count += 1
+#         log(lambda: "Starting static data import from main %d" % count)
+#         import importEnergy_toDB
+#         importEnergy_toDB.main()
 
 def main():
-    # readLiveData().readHours()
-    # readLiveData().readLive()
-    plot = Thread(target=plotLiveData().plotLive())
-    # update = Thread(target=updateDB())
-    # asyncio.run(updateDB())
-    # asyncio.run(plotLiveData().plotLive())
-    updateDB()
-    plot.start()
+    # Process(target=updateDB("Starting updateDB")).start()
+    # Process(target=plotLiveData().plotLive).start()
+    # _thread.start_new_thread(plotLiveData().plotLive())
+    # _thread.start_new_thread(updateDB("Starting updateDB thread"), ())
 
 
-
-
+    # updateDB() # disable auto update database on start for now
+    plotLiveData().plotLive(Vars.ip, Vars.port)
 
 if __name__ == '__main__':
     main()

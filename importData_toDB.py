@@ -6,55 +6,28 @@ import sqlite3 as sl
 from sqlite3 import IntegrityError
 import ast # for converting string representation of a list to a list
 
-sys.stdin.reconfigure(encoding='utf-8') # set encoding
-sys.stdout.reconfigure(encoding='utf-8') # set encoding
+# import globals
+# import globals as gl
+from globals import *
 
-dt = datetime.datetime.today() # get current datetime
-
-# global variables
-months = (range(1,13,1)) # url months
-weeks = (range(1,54,1))  # url weeks
-days = (range(1,32,1))   # url days
-hours = (range(1,25,1))  # url hours
-years = (range(2020, 2031, 1)) # years
-date_now = dt
-current_date = ("{:4d}-{:02d}-{:02d}".format(dt.year,dt.month,dt.day))
-current_time = ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
-month_now = date_now.month
-year_now = date_now.year #% 100 # last two digits
-last_year = date_now.year-1 # last year
-# lowMonths = (4,6,9,11)
-# highMonths = (1,3,5,7,8,10,12)
-# excMonth = 2
-
-# path and file naming
-# cwd = os.getcwd() # get current working directory
-path = "t:\\workspaces\\Atom\\Youless\\"
-dbname = "youless.db"
-
-# enable debug messages
-DEBUG = True
-def log(s):
-    """
-    Usage:
-    log(lambda: "TEXT")
-    log(lambda: "TEXT and %s" % variable)
-    """
-    if DEBUG:
-        print(s())
+sys.stdin.reconfigure(encoding=Vars.web("ENCODING")) # set encoding
+sys.stdout.reconfigure(encoding=Vars.web("ENCODING")) # set encoding
 
 class parseData:
 
     def __init__(self):
-        self.__headers = { "Accept-Language": "en-US, en;q=0.5"} # acceptable html headers
-        self.__url = "http://192.168.0.40" # base url
-        self.__ele = "/V?" # url year, week, day, hour
-        self.__gas = "/W?" # url year, week, day
-        self.__json = "f=j&"
-        self.__month = "m=" # url represented in months, history goes to next month
-        self.__day = "d=" # url represented in weeks, history goes to next week
-        # self.__X = "w="  # url represented in 3 parts, shows only one day 24hrs back up to current hour
-        # self.__Y = "h=" # url represented in 20 parts of one hour counting back from the current moment
+        self.__headers = Vars.web("HEADERS") # acceptable html headers
+        self.__url = Vars.web("URL") # base url
+        self.__ele = Vars.web("ELE")
+        self.__gas = Vars.web("GAS")
+        self.__snul = Vars.web("S0")
+        self.__json = Vars.web("JSON")
+        self.__month = Vars.web("M")
+        self.__day = Vars.web("W")
+        self.__kwh = Vars.conf("valuenaming")[0]
+        self.__m3 = Vars.conf("valuenaming")[1]
+        self.__watt = Vars.conf("valuenaming")[2]
+        self.__ltr = Vars.conf("valuenaming")[3]
 
     def create_connection(self, db_file):
         """
@@ -63,12 +36,12 @@ class parseData:
         self.conn = None
         try:
             self.conn = sl.connect(db_file)
-            log(lambda: ("Connected to: {}".format(db_file)))
+            dbg(lambda: ("Connected to: {}".format(db_file)))
         except Error as e:
             log(lambda: e)
         return self.conn
 
-    def insert_dayhours(self, conn, insertion):
+    def insert_dayhours(self, conn, insertion, table, type):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, week, month, monthname, day, yearday, values per hour
@@ -78,21 +51,20 @@ class parseData:
         INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
         # log(lambda: "Opening table dayhours_e")
-        self.sql = '''
-                    INSERT OR REPLACE INTO dayhours_e(date,year,week,month,monthname,day,yearday,watt)
-                    VALUES(?,?,?,?,?,?,?,?)
-                  '''
+        # self.table = 'dayhours_e' if (type == 'E') else 'dayhours_g'
+        self.table = table
+        self.type = type
+        self.sql = Vars.conf("queries")["i_dayhours"]
         # self.query = '''
         #              SELECT EXISTS(SELECT 1 FROM dayhours_e WHERE date=? COLLATE NOCASE) LIMIT 1
         #              '''
-        self.query = '''
-                     SELECT * FROM dayhours_e WHERE date=?
-                     '''
+        self.query = Vars.conf("queries")["s_table"]
         self.datequery = (insertion[0].strip(),) # create primary key check
         self.date = insertion[0] # create primary key check
 
         cur = conn.cursor()
-        self.check = cur.execute(self.query, self.datequery) # check the database for existing primary keys
+
+        self.check = cur.execute((self.query % self.table), self.datequery) # check the database for existing primary keys
 
         x = insertion[7] # x is string representation of list
         x = ast.literal_eval(x) # convert x to real list
@@ -109,10 +81,11 @@ class parseData:
             differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
             differences = len(differences)
         except:
-            log(lambda: "no existing Primary Key for {}".format(insertion[0]))
+            dbg(lambda: "no existing Primary Key for {}".format(insertion[0]))
             if ('existingKey' not in locals()):
-                log(lambda: "existingKey variable was not created, assigning None")
+                dbg(lambda: "double check for existingKey, no existingKey.")
                 existingKey = None
+
 
         # for i in existingValues:
         #     i = float(i)
@@ -141,9 +114,9 @@ class parseData:
             try:
                 log(lambda: "Primarykey %s has %i entries and/or %i differences. Overwriting and appending data!" % (self.date, lenX, differences))
             except:
-                log(lambda: "Primarykey did not exist. Creating new entry")
+                log(lambda: "existingKey variable was not created, assigning None")
         try:
-            cur.execute(self.sql, insertion)
+            cur.execute((self.sql % (self.table, self.type)), insertion)
             log(lambda: "Updating the database with: {}".format(insertion))
         except Exception as E:
             log(lambda: "An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
@@ -151,7 +124,7 @@ class parseData:
         conn.commit()
         return cur.lastrowid
 
-    def insert_yeardays(self, conn, insertion, thismonth):
+    def insert_yeardays(self, conn, insertion, thismonth, table, type):
         """
         Store values in sqlite3 database in the following format (all strings):
         date, year, month, monthname, values per day
@@ -161,21 +134,19 @@ class parseData:
         INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
         # log(lambda: "Opening table yeardays_e")
-        self.sql = '''
-                    INSERT OR REPLACE INTO yeardays_e(date,year,month,monthname,kwh)
-                    VALUES(?,?,?,?,?)
-                   '''
+        self.table = table
+        self.type = type
+
+        self.sql = Vars.conf("queries")["i_yeardays"]
         # self.query = '''
         #              SELECT EXISTS(SELECT 1 FROM yeardays_e WHERE date=? COLLATE NOCASE) LIMIT 1
         #              '''
-        self.query = '''
-                     SELECT * FROM yeardays_e WHERE date=?
-                     '''
+        self.query = Vars.conf("queries")["s_table"]
         self.datequery = (insertion[0].strip(),) # create primary key check
         self.date = insertion[0] # create primary key check
 
         cur = conn.cursor()
-        self.check = cur.execute(self.query, self.datequery) # check the database for existing primary keys
+        self.check = cur.execute((self.query % self.table), self.datequery) # check the database for existing primary keys
 
         # log(lambda: type(insertion))
         # log(lambda: insertion[0]) # returns the primary key
@@ -199,7 +170,7 @@ class parseData:
             differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
             differences = len(differences)
         except:
-            log(lambda: "no existing Primary Key for {}".format(insertion[0]))
+            dbg(lambda: "no existing Primary Key for {}".format(insertion[0]))
             if ('existingKey' not in locals()):
                 log(lambda: "existingKey variable was not created, assigning None")
                 existingKey = None
@@ -246,8 +217,10 @@ class parseData:
         #
 
         try:
-            cur.execute(self.sql, insertion)
-            log(lambda: "Updating the database with: {}".format(insertion))
+            # t = (self.sql % self.table, self.type)
+            # dbg(lambda: t)
+            cur.execute((self.sql % (self.table, self.type)), insertion)
+            dbg(lambda: "Updating the database with: {}".format(insertion))
         except Exception as E:
             log(lambda: "An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
             pass
@@ -256,94 +229,122 @@ class parseData:
 
     def parseDays(self):
         """
-        Retrieve daily hour value from Youless 120 with a maximum history of 70 days back
+        Retrieve daily Electricity and Gas hour value from Youless 120 with a maximum history of 70 days back
         """
+        for x in Vars.conf("dbtables"):
+            self.__table = Vars.conf("dbtables")[x][1]
+            self.__urltype = self.__ele if x == 'E' and x != ('G', 'S') else self.__gas if x == 'G' else self.__snul
+            self.__type = self.__watt if x == 'E' and x != 'G' else self.__ltr
+            self.maxPage = Vars.web("maxDayPage")
+            self.minPage = Vars.web("minDayPage")
+            self.maxHour = Vars.web("maxHour")
+            self.minHour = Vars.web("minHour")
+            self.counter = self.maxPage
+            self.conn = self.create_connection(Vars.path+Vars.dbname)
+            log(lambda: "Connected to table {}".format(self.__table))
+            while (self.counter >= self.minPage):
+                self.api = get(self.__url + self.__urltype + self.__json + self.__day + str(self.counter))
+                readapi = self.api.json()
+                jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
+                date = jsonDate.date()
+                year = jsonDate.date().strftime('%Y')
+                weekNo = jsonDate.date().strftime('%W')
+                monthNo = jsonDate.date().strftime('%m')
+                monthName = jsonDate.date().strftime('%B')
+                monthDay = jsonDate.date().strftime('%d')
+                yearDay = jsonDate.date().strftime('%j')
+                rawValues = readapi['val']
+                lst = []
+                self.hours = self.minHour
+                for y, s in enumerate(rawValues):
+                    try:
+                        rawValues[y] = s.strip()
+                        rawValues[y] = float(s.replace(',', '.'))
+                    except AttributeError:
+                        pass
+                    except IndexError:
+                        break
+                    finally:
+                        lst.append(rawValues[y])
+                if (rawValues[y] == None):
+                    lst.pop()
+                strlst = '{}'.format(lst)
 
-        self.maxPage = 70
-        self.minPage = 1
-        self.maxHour = 24
-        self.minHour = 0
-        self.counter = self.maxPage
-        self.conn = self.create_connection(path+dbname)
-        while (self.counter >= self.minPage):
-            self.api = get(self.__url + self.__ele + self.__json + self.__day + str(self.counter))
-            readapi = self.api.json()
-            jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
-            date = jsonDate.date()
-            year = jsonDate.date().strftime('%Y')
-            weekNo = jsonDate.date().strftime('%W')
-            monthNo = jsonDate.date().strftime('%m')
-            monthName = jsonDate.date().strftime('%B')
-            monthDay = jsonDate.date().strftime('%d')
-            yearDay = jsonDate.date().strftime('%j')
-            rawValues = readapi['val']
-            lst = []
-            self.hours = self.minHour
-            for y, s in enumerate(rawValues):
-                try:
-                    rawValues[y] = s.strip()
-                    rawValues[y] = float(s.replace(',', '.'))
-                except AttributeError:
-                    pass
-                except IndexError:
-                    break
-                finally:
-                    lst.append(rawValues[y])
-            if (rawValues[y] == None):
-                lst.pop()
-            strlst = '{}'.format(lst)
+                task = (str(date),int(year),int(weekNo),int(monthNo),monthName,int(monthDay),int(yearDay),strlst)
+                self.insert_dayhours(self.conn, task, self.__table, self.__type)
+                lst.clear()
+                self.counter -= 1
+            self.conn.close()
+            log(lambda: "Database connection closed...")
 
-            task = (str(date),int(year),int(weekNo),int(monthNo),monthName,int(monthDay),int(yearDay),strlst)
-            self.insert_dayhours(self.conn, task)
-            lst.clear()
-            self.counter -= 1
-        self.conn.close()
-        log(lambda: "Database connection closed...")
-
-    def parseMonths(self):
+    def parseMonths(self):#, type):
         """
-        Retrieve days per month from Youless 120 up to 11 months back
+        Retrieve days per month from Youless 120 up to 11 months back for Electricity and Gas
         and call insert_yeardays() with the values
         """
-        self.maxPage = 12
-        self.minPage = 1
-        self.counter = self.maxPage
-        self.conn = self.create_connection(path+dbname)
-        while (self.counter >= self.minPage):
-            self.api = get(self.__url + self.__ele + self.__json + self.__month + str(self.counter))
-            readapi = self.api.json()
-            jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
-            date = jsonDate.date()
-            year = jsonDate.date().strftime('%Y')
-            monthNo = jsonDate.date().strftime('%m')
-            monthName = jsonDate.date().strftime('%B')
-            thismonth = dt.strftime('%Y-%m-01')
-            rawValues = readapi['val']
-            lst = []
-            for y, s in enumerate(rawValues):
-                try:
-                    rawValues[y] = s.strip()
-                    rawValues[y] = float(s.replace(',', '.'))
-                except AttributeError:
-                    pass
-                except IndexError:
-                    break
-                finally:
-                    lst.append(rawValues[y])
-            if (rawValues[y] == None):
-                lst.pop()
-            strlst = '{}'.format(lst)
-            task = (str(date),int(year),int(monthNo),monthName,strlst)
-            # log(lambda: task)
-            self.insert_yeardays(self.conn, task, str(thismonth))
-            lst.clear()
-            self.counter -= 1
-        self.conn.close()
-        log(lambda: "Database connection closed...")
+        # self.tablecount = len(Variables.dbtables)
+        # self.count = 0
+        # if (type == 'E'):
+        #     self.__type = self.__ele
+        # elif (type == 'G'):
+        #     self.__type = self.__gas
+
+        for x in Vars.conf("dbtables"):
+            self.__table = Vars.conf("dbtables")[x][0]
+            self.__urltype = self.__ele if x == 'E' and x != ('G', 'S') else self.__gas if x == 'G' else self.__snul
+            self.__type = self.__kwh if x == 'E' and x != 'G' else self.__m3
+            self.maxPage = Vars.web("maxMonthPage")
+            self.minPage = Vars.web("minMonthPage")
+            self.counter = self.maxPage
+            self.conn = self.create_connection(Vars.path+Vars.dbname)
+            log(lambda: "Connected to table {}".format(self.__table))
+            while (self.counter >= self.minPage):
+                self.api = get(self.__url + self.__urltype + self.__json + self.__month + str(self.counter))
+                readapi = self.api.json()
+                jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
+                date = jsonDate.date()
+                year = jsonDate.date().strftime('%Y')
+                monthNo = jsonDate.date().strftime('%m')
+                monthName = jsonDate.date().strftime('%B')
+                thismonth = Runtime.dt.strftime('%Y-%m-01')
+                rawValues = readapi['val']
+                lst = []
+                for y, s in enumerate(rawValues):
+                    try:
+                        rawValues[y] = s.strip()
+                        rawValues[y] = float(s.replace(',', '.'))
+                    except AttributeError:
+                        pass
+                    except IndexError:
+                        break
+                    finally:
+                        lst.append(rawValues[y])
+                if (rawValues[y] == None):
+                    lst.pop()
+                strlst = '{}'.format(lst)
+                task = (str(date),int(year),int(monthNo),monthName,strlst)
+                # log(lambda: task)
+                self.insert_yeardays(self.conn, task, str(thismonth), self.__table, self.__type)
+                lst.clear()
+                self.counter -= 1
+            self.conn.close()
+            log(lambda: "Database connection closed...")
 
 def main():
-    parseData().parseMonths()
-    parseData().parseDays()
+    # check if database exists
+    try:
+        f = open(Vars.path+Vars.dbname, 'rb')
+    except:
+        print("database not found")
+        sys.exit(1) # exiting with a non zero value is better for returning from an error
+    else:
+        f.close()
+        parseData().parseDays()
+        parseData().parseMonths()
+    # finally:
+        # f.close()
+
+
 
 if __name__ == '__main__':
     main()

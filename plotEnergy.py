@@ -1,4 +1,4 @@
-import sys, os, datetime, re, time
+import sys, os, datetime, re, time, locale
 import calendar
 import sqlite3 as sl
 from sqlite3 import IntegrityError
@@ -8,45 +8,22 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 
-DEBUG = False
-def log(s):
-    """
-    Usage:
-    log(lambda: "TEXT")
-    log(lambda: "TEXT and %s" % variable)
-    """
-    if DEBUG:
-        print(s())
+# import globals
+# import globals as gl
+from globals import *
 
-dt = datetime.datetime.today() # get current datetime
-
-# global variables
-months = (range(1,13,1)) # url months
-weeks = (range(1,54,1))  # url weeks
-days = (range(1,32,1))   # url days
-hours = (range(1,25,1))  # url hours
-years = (range(2020, 2031, 1)) # years
-date_now = dt
-current_date = ("{:4d}{:02d}{:02d}".format(dt.year,dt.month,dt.day))
-current_time = ("{:02d}{:02d}{:02d}".format(dt.hour,dt.minute,dt.second))
-today = ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day))
-yesterday = ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day-1))
-day_now = date_now.day
-month_now = date_now.month
-year_now = date_now.year #% 100 # last two digits
-last_year = date_now.year-1 # last year
+# set language
+locale.setlocale(locale.LC_ALL, Vars.web("LOCALE"))
 
 class retrieveData:
     # global class variables
-    # __cwd = os.getcwd() # get current working directory
-    __path = "t:\\workspaces\\Atom\\Youless\\" # fixed path for now
-    __dbname = "youless.db"
+    __path = Vars.path + Vars.dbname
 
     def __init__(self):
         """
         Automatic database connection when called
         """
-        self.__db_file = retrieveData.__path+retrieveData.__dbname
+        self.__db_file = retrieveData.__path
         log(lambda: "Starting database connection...")
         self.conn = None
         try:
@@ -55,19 +32,26 @@ class retrieveData:
         except Error as e:
             log(lambda: e)
 
-    def retrieve_day(self, year, month, day):
+    def retrieve_day(self, year, month, day, table):
         """
-        retrieve_day(2021, 1, 19) year as integer, month as integer and day as integer
-        Retrieve day data for given year, month and day in a list with hours and kWh
+        Retrieve data from table dayhours_X.
+        Retrieves day data for given year, month and day in a list with hours and values.
+        retrieve_day(2021, 1, 19, 'dayhours_e')
+        year as integer
+        month as integer
+        day as integer
+        table as string
         """
         self.year = year
         self.month = month
         self.day = day
-        log(lambda: "Starting day retrieval %d %d %d" % (self.year, self.month, self.day))
+        self.table = table
+        log(lambda: "Starting day retrieval %d %d %d from table %s" % (self.year, self.month, self.day, self.table))
 
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = ("SELECT * FROM dayhours_e WHERE year = %s AND month = %s AND day = %s" % (str(self.year), str(self.month), str(self.day)))
+            #self.query = ("SELECT * FROM dayhours_e WHERE year = %s AND month = %s AND day = %s" % (str(self.year), str(self.month), str(self.day)))
+            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, str(self.year), str(self.month), str(self.day)))
             data = self.cur.execute(self.query)
             rows = len(self.cur.fetchall())
             log(lambda: "Rows retrieved: %d" % rows)
@@ -94,18 +78,24 @@ class retrieveData:
         log(lambda: self.lst)
         return self.lst
 
-    def retrieve_month(self, year, month):
+    def retrieve_month(self, year, month, table):
         """
-        retrieve_month(2021, 1) year as integer and month as integer
-        Retrieve monthdata for given year and month in a list with days and kWh
+        Retrieve data from table yeardays_X.
+        Retrieves monthdata for given month of given year in a list with days and values
+        retrieve_month(2021, 1, 'yeardays_e')
+        year as integer
+        month as integer
+        table as string
         """
         self.year = year
         self.month = month
-        log(lambda: "Starting month retrieval %d %d" % (self.year, self.month))
+        self.table = table
+        log(lambda: "Starting month retrieval %d %d from table %s" % (self.year, self.month, self.table))
 
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = ("SELECT * FROM yeardays_e WHERE year = %s AND month = %s" % (str(self.year), str(self.month)))
+            #self.query = ("SELECT * FROM yeardays_e WHERE year = %s AND month = %s" % (str(self.year), str(self.month)))
+            self.query = (Vars.conf("queries")["s_yeardays"] % (self.table, str(self.year), str(self.month)))
             data = self.conn.execute(self.query)
             rows = len(data.fetchall())
             log(lambda: "Rows retrieved: %d" % rows)
@@ -132,24 +122,29 @@ class retrieveData:
         log(lambda: self.lst)
         return self.lst
 
-    def retrieve_year(self, year, type):
+    def retrieve_year(self, year, totals, table):
         """
-        retrieve_year(2021, 1 or 2) year as integer, type as integer
-        Retrieve available data for given year per month and day in kWh
-        return either month totals or day totals for the entire year.
-        1 is month totals
-        2 is day totals
+        Retrieve data from table yeardays_X.
+        Retrieves available data for given year per month and day in values
+        Returns either month totals or day totals for the entire year.
+        retrieve_year(2021, 2, 'yeardays_g')
+        year as integer
+        totals as integer (1 is month totals, 2 is day totals)
+        table as string
         """
         self.year = year
-        self.type = type
-        if (self.type != 1 and self.type != 2):
+        self.totals = totals
+        self.table = table
+
+        if (self.totals != 1 and self.totals != 2):
             log(lambda: "error: type can only be 1 or 2")
             return "error: type can only be 1 or 2"
         log(lambda: "Starting year retrieval %d" % (self.year))
 
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = ("SELECT * FROM yeardays_e WHERE year = %s ORDER BY date" % (str(self.year)))
+            # self.query = ("SELECT * FROM yeardays_e WHERE year = %s ORDER BY date" % (str(self.year)))
+            self.query = (Vars.conf("queries")["so_yeardays"] % (self.table, str(self.year)))
             data = self.conn.execute(self.query)
             rows = len(data.fetchall())
             log(lambda: "Rows retrieved: %d" % rows)
@@ -169,9 +164,9 @@ class retrieveData:
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
                         total += float(self.values[v])
-                    if (self.type == 1): # month totals
+                    if (self.totals == 1): # month totals
                         self.tmplst = [[row[1], row[2], row[3], int(total)]]
-                    elif (self.type == 2): # day totals
+                    elif (self.totals == 2): # day totals
                         self.tmplst = [[row[1], row[2], row[3], self.values]]
                     self.lst.extend(self.tmplst)
                     self.tmplst.clear()
@@ -189,85 +184,134 @@ class plotData:
     def __init__(self):
         self.DB = retrieveData()
 
-    def plot_day_hour(self, year, month, day):
+    def plot_day_hour(self, year, month, day, etype):
         """
-        plot one day of the year into a graph
-        plot_day_hour(2021, 1, 19) or plot_day_hour(2021, January, 19)
-        year as integer, month as integer or string and day as integer
+        Reads from table dayhours_X
+        Plot one day of the year into a graph with hourly totals.
+        plot_day_hour(2021, 1, 19, 'E') or plot_day_hour(2021, January, 19, 'G')
+        year as integer
+        month as integer or string
+        day as integer
+        etype as string ('E' for Electricity, 'G' for Gas)
         """
         self.year = year
         self.month = month
         self.day = day
+        self.etype = etype
+        self.table = Vars.conf("dbtables")[self.etype][1]
+        self.columns = [Vars.lang("U"), Vars.lang("W"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("U"), Vars.lang("L"), Vars.lang("M3")] if self.etype == 'G' else None
+
         if (type(self.month) == str):
             self.mN = datetime.datetime.strptime(self.month, '%B')
             self.month = int(self.mN.date().strftime('%m'))
         # self.mNo = datetime.datetime.strftime(self.month, '%m')
         self.monthName = datetime.date(1900,self.month,1).strftime('%B')
         # log(lambda: (self.year,self.month,self.day))
-        lst = self.DB.retrieve_day(self.year,self.month,self.day) # retrieve data from database
+        lst = self.DB.retrieve_day(self.year,self.month,self.day,self.table) # retrieve data from database
         if lst == 0:
             log(lambda: "No Data")
             return 0
-        dict = {}
+        data = {}
         high = max(lst[3]) + max(lst[3])/3
         totalWatt = 0
         for n, elem in enumerate(lst[3]):
-            dict[n+1] = elem # Add watt values to dictionary with the hour as key
+            data[n+1] = elem # Add watt values to dictionary with the hour as key
             totalWatt += elem
 
-        df = pd.DataFrame(dict.items(), columns = ['Hour', 'Watt'])
+        df = pd.DataFrame(data.items(), columns = self.columns[:2])
 
-        fig = px.bar(df, x=df["Hour"], y=df["Watt"], range_y=(0,high), title=("%s %d %d, total kWh: %g" % (self.monthName,self.day,self.year, float(totalWatt/1000))))
-        log(lambda: "Plotting month %d day %d of year %d" % (self.month,self.day,self.year))
+        fig = px.bar(
+            df,
+            x = df[self.columns[0]],
+            y = df[self.columns[1]],
+            range_y = (0,high),
+            title = (Vars.lang('dayhourtitle') % (self.monthName, self.day, self.year, self.columns[1], float(totalWatt/1000), self.columns[2])),
+            # labels = {
+            #     "Hour": Vars.lang('U'),
+            #     "Watt": Vars.lang('WH')
+            # }
+        )
+        log(lambda: "Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
         # fig.show()
         return fig
 
-    def plot_year_month(self, year, month):
+    def plot_month_day(self, year, month, etype):
         """
-        plot one month of the year into a graph
-        plot_year_month(2021, 1) or plot_year_mont(2021, January)
-        year as integer and month as integer or string
+        Reads from table yeardays_X
+        plot one month of the year into a graph with daily totals.
+        plot_year_month(2021, 1, 'E') or plot_year_month(2021, January, 'G')
+        year as integer
+        month as integer or string
+        etype as string ('E' for Electricity, 'G' for Gas)
         """
         self.year = year
         self.month = month
+        self.etype = etype
+        self.table = Vars.conf("dbtables")[self.etype][0]
+        self.columns = [Vars.lang("D"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("D"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
+
         if (type(self.month) == str):
             self.mN = datetime.datetime.strptime(self.month, '%B')
             self.month = int(self.mN.date().strftime('%m'))
         # self.mNo = datetime.datetime.strftime(self.month, '%m')
         self.monthName = datetime.date(1900,self.month,1).strftime('%B')
-        lst = self.DB.retrieve_month(self.year,self.month) # retrieve data from database
+        lst = self.DB.retrieve_month(self.year, self.month, self.table) # retrieve data from database
         if lst == 0:
             log(lambda: "No Data")
             return 0
-        dict = {}
+        data = {}
         high = max(lst[2]) + max(lst[2])/3
         # log(lambda: max(lst[2])
         # log(lambda: lst)
         totalkWh = 0
         for n, elem in enumerate(lst[2]):
-            dict[n+1] = elem # Add kWh values to dictionary with the day as key
+            data[n+1] = elem # Add kWh values to dictionary with the day as key
             totalkWh += elem
 
-        df = pd.DataFrame(dict.items(), columns = ['Day', 'kWh'])
+        df = pd.DataFrame(data.items(), columns = self.columns[:2])#['Day', 'kWh'])
 
-        fig = px.bar(df, x=df["Day"], y=df["kWh"], range_y=(0,high), title=("%s %d, total kWh: %g" % (self.monthName,self.year, totalkWh)))
+        # lendf = len(df['Day'])
+        # firstdf =df['Day'][0]
+        lastdf = df[self.columns[0]][len(df[self.columns[0]]) - 1]
+        # log(lambda: last)
+        # log(lambda: type(df["Day"]))
+
+        fig = px.bar(
+            df,
+            x = df[self.columns[0]],
+            y = df[self.columns[1]],
+            range_y = (0, high),
+            # range_x = (0, lastdf),
+
+            title=(Vars.lang('yearmonthtitle') % (self.monthName, self.year, self.columns[1], totalkWh, self.columns[2])),
+            # labels = {
+            #     "Day": Vars.lang('D'),
+            #     "kWh": Vars.lang('KH')
+            # }
+        )
         log(lambda: "Plotting month %d of year %d" % (self.month, self.year))
         # fig.show()
         return fig
 
-    def plot_year_day(self, year):
+    def plot_year_day(self, year, etype):
         """
+        Reads from table yeardays_X
         plot the year with daily totals into a graph
-        plot_year_day(2021) year as integer
+        plot_year_day(2021, 'E')
+        year as integer
+        etype as string ('E' for Electricity, 'G' for Gas)
         """
         self.year = year
+        self.etype = etype
+        self.table = Vars.conf("dbtables")[self.etype][0]
+        self.columns = [Vars.lang("D"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("D"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
         self.type = 2 # equals year with month totals
-        lst = self.DB.retrieve_year(self.year, self.type)
+        lst = self.DB.retrieve_year(self.year, self.type, self.table)
         if lst == 0:
             log(lambda: "No Data")
             return 0
         # log(lambda: lst)
-        dict = {}
+        data = {}
         totalkWh = 0.0
         maxLst = []
         for n, elem in enumerate(lst):
@@ -277,79 +321,132 @@ class plotData:
                 # log(lambda: "month %d day %d kwh %g" % (n+1, y+1, value)) # equals days
                 # log(lambda: "%d-%d kwh: %g" % (y+1, n+1, value)) # equals days
                 tempkey = ("%d-%d-%d" % (self.year,self.month,y+1)) # year-month-day
-                dict[tempkey] = value
+                data[tempkey] = value
                 totalkWh += value
                 maxLst.append(value)
         # log(lambda: dict)
         high = max(maxLst) + max(maxLst)/3
         # log(lambda: totalkWh)
         # log(lambda: high)
-        df = pd.DataFrame(dict.items(), columns = ['date', 'kwh'])
+        df = pd.DataFrame(data.items(), columns = self.columns[:2])
         # log(lambda: df["date"])
-        fig = px.bar(df, x=df["date"], y=df["kwh"], range_y=(0,high), title=("year %d, total kWh: %g" % (self.year, totalkWh)))
+        fig = px.bar(
+            df,
+            x = df[self.columns[0]],
+            y = df[self.columns[1]],
+            range_y = (0,high),
+            # title = (Items.lang('yeardaytitle') % (self.year, totalkWh)),
+            title = (Vars.lang('yeardaytitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
+            # labels = {
+            #     "date": Items.lang('DT'),
+            #     "kwh": Items.lang('KH')
+            # }
+        )
         log(lambda: "Plotting year %d" % (self.year))
         # log(lambda: df)
         # fig.show()
         return fig
 
-    def plot_year(self, year):
+    def plot_year_month(self, year, etype):
         """
         plot the year with month totals into a graph
         plot_year(2021) year as integer
         """
         self.year = year
+        self.etype = etype
+        self.table = Vars.conf("dbtables")[self.etype][0]
+        self.columns = [Vars.lang("M"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("M"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
         self.type = 1 # equals year with month totals
-        lst = self.DB.retrieve_year(self.year, self.type)
+        lst = self.DB.retrieve_year(self.year, self.type, self.table)
         if lst == 0:
             log(lambda: "No Data")
             return 0
-        dict = {}
+        data = {}
+        months = {}
         totalkWh = 0.0
         maxLst = []
         for n, elem in enumerate(lst):
-            dict[lst[n][1]] = lst[n][3]
+            data[lst[n][1]] = lst[n][3]
+            months[lst[n][1]] = datetime.date(1900,int(lst[n][1]),1).strftime('%B')
             totalkWh += lst[n][3]
             maxLst.append(lst[n][3])
         high = max(maxLst) + max(maxLst)/3
-
-        df = pd.DataFrame(dict.items(), columns = ['month', 'kwh'])
-        log(lambda: df)
-        fig = px.bar(df, x=df["month"], y=df["kwh"], range_y=(0,high), title=("year %d, total kWh: %g" % (self.year, totalkWh)))
+        # dbg(lambda: months.items())
+        df = pd.DataFrame(data.items(), columns = (self.columns[:2]))
+        # df = pd.DataFrame(data, columns = (self.columns[:2]))
+        # dbg(lambda: df)
+        fig = px.bar(
+            df,
+            x = df[self.columns[0]],
+            y = df[self.columns[1]],
+            range_y = (0,high),
+            # title = (Vars.lang('yeartitle') % (self.year, totalkWh)),
+            title = (Vars.lang('yeartitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
+            # labels = {
+            #     "month": Vars.lang('M'),
+            #     "kwh": Vars.lang('KH')
+            # }
+        )
+        # mn = []
+        # for n in df[self.columns[0]]:
+        #                 n = datetime.date(1900,int(n),1).strftime('%B')
+        #                 mn.append(n)
+        # dbg(lambda: mn)
+        # dbg(lambda: list(months.values()))
+        fig.update_layout(
+            # xaxis_tickformat = '%b'
+            xaxis=dict(
+                tickmode = 'array',
+                tickvals = list(months.keys()),
+                ticktext = list(months.values())
+            )
+        )
         log(lambda: "Plotting year %d" % (self.year))
         # fig.show()
         return fig
 
 
-def dashtest():
-    import dash
-    import dash_core_components as dcc
-    import dash_html_components as html
+# def DashDebug():
+#     import dash
+#     import dash_core_components as dcc
+#     import dash_html_components as html
+#
+#     # d_today = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now)
+#     # d_yesterday = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1)
+#     d_currmonth = plotData().plot_year_month(Runtime.year_now, Runtime.month_now)
+#     # d_lastmonth = plotData().plot_year_month(Runtime.year_now, Runtime.last_month)
+#     # d_year1 = plotData().plot_year(Runtime.year_now)
+#     # d_year2 = plotData().plot_year(Runtime.last_year)
+#     # d_fullyear1 = plotData().plot_year_day(Runtime.year_now)
+#     # d_fullyear2 = plotData().plot_year_day(Runtime.last_year)
+#
+#     app = dash.Dash()
+#     app.layout = html.Div([
+#         # dcc.Graph(figure=d_today),
+#         # dcc.Graph(figure=d_yesterday),
+#         dcc.Graph(figure=d_currmonth),
+#         # dcc.Graph(figure=d_lastmonth),
+#         # dcc.Graph(figure=d_year1),
+#         # dcc.Graph(figure=d_year2),
+#         # dcc.Graph(figure=d_fullyear1),
+#         # dcc.Graph(figure=d_fullyear2)
+#     ])
+#
+#     app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
 
-    d_today = plotData().plot_day_hour(year_now,month_now,day_now)
-    d_yesterday = plotData().plot_day_hour(year_now,month_now,day_now-1)
-    d_currmonth = plotData().plot_year_month(2021,4)
-    d_year1 = plotData().plot_year(2020)
-    d_year2 = plotData().plot_year(2021)
-    d_fullyear1 = plotData().plot_year_day(2020)
-    d_fullyear2 = plotData().plot_year_day(2021)
-
-    app = dash.Dash()
-    app.layout = html.Div([
-        dcc.Graph(figure=d_today),
-        dcc.Graph(figure=d_yesterday),
-        dcc.Graph(figure=d_currmonth),
-        dcc.Graph(figure=d_year1),
-        dcc.Graph(figure=d_year2),
-        dcc.Graph(figure=d_fullyear1),
-        dcc.Graph(figure=d_fullyear2)
-    ])
-
-    app.run_server(debug=True, use_reloader=False)  # Turn off reloader if inside Jupyter
-
-def main(*kwargs):
+def main():#*kwargs):
     # retrieveData().retrieve_day(2021,2,27)
-    # retrieveData().retrieve_year(2021,2)
-    # dashtest()
+    # retrieveData().retrieve_year(2021, 2, "yeardays_e")
+    # DashDebug()
+
+    # plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now,"G")
+    # plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now,"E")
+    # plotData().plot_month_day(2021,4,'E')
+    # plotData().plot_month_day(2021,4,'G')
+    # plotData().plot_year_day(2020,'E')
+    # plotData().plot_year_day(2020,'G')
+    # plotData().plot_year_month(2020,'G')
+    # plotData().plot_year_month(2021,'E')
     log(lambda: "Nothing to see here!")
 
 if __name__ == '__main__':
