@@ -23,9 +23,9 @@ The files are still full of debug logs and commented out test code.
  - Add GAS usage
  - ~~Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append~~
  - Convert read database data to Pandas DataFrame directly
- - ~~Create automatic readout from LS120
+ - ~~Create automatic readout from LS120~~
  - Separate webpage from plot script
- - ~~Make webpage available on linux server
+ - ~~Make webpage available on linux server~~
  - Create interactive Dash website with:
 	- Automatic view of available data
 	- Buttons that click to available data

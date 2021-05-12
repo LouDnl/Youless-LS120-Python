@@ -32,6 +32,88 @@ class retrieveData:
         except Error as e:
             log(lambda: e)
 
+    def retrieve_hours(self, table, year, month, startday, starthour, *args):
+        """
+        Retrieve data from table dayhours_X.
+        Retrieve hour data for given year, month and days with a minimum of 1 hour and a maximum of 24 hours in a list with hours and values.
+        Since we dont know if the end day/hour is the same as the start day/hour we use *args to accept this.
+        When only startday and starthour is given, only that single hour will be retrieved
+        Examples:
+            retrieve_hours('dayhours_g', 2021, 3, 2, 3, 3, 6) # year: 2021, month: 3, startday: 2, starthour: 5, endday: 3, endhour: 6
+            retrieve_hours('dayhours_e', 2020, 10, 1, 12) # year: 2020, month: 10, startday: 1, starthour: 12
+            retrieve_hours('dayhours_e', 2020, 11, 2, 11, 18) # year: 2020, month: 11, startday: 2, starthour: 11, endhour: 18
+        table as string
+        year as integer
+        month as integer (min is 1, max is 12)
+        startday as integer (min is 1, max is 30)
+        endday as integer (min is 2, max is 31)
+        starthour as integer (min is 0 (00:00), max is 23 (23:00))
+        endhour as integer (min is 1 (01:00), max is 24 (24:00))
+        """
+        self.table = table
+        self.year = year
+        self.month = month
+        self.startday = startday
+        self.starthour = starthour
+        self.hourlist = []
+        if (len(args) == 2):
+            self.endday = args[0]
+            self.endhour = args[1]
+            self.query = (Vars.conf("queries")["s_dayhours2"] % (self.table, self.year, self.month, self.startday, self.endday))
+            self.lst = [self.year,self.month,self.startday,self.starthour,self.endday,self.endhour,self.hourlist]
+        elif (len(args) == 1):
+            self.endhour = args[0]
+            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
+            self.lst = [self.year,self.month,self.startday,self.starthour,self.endhour,self.hourlist]
+        else:
+            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
+            self.lst = [self.year,self.month,self.startday,self.starthour,self.hourlist]
+
+        # self.__QQ = Vars.conf("queries")["s_dayhours2"] if self.__Q == 2 else Vars.conf("queries")["s_dayhours"]
+
+        # if (self.__Q == 2):
+        #     log(lambda: self.__QQ)
+        #     log(lambda: (self.__QQ % (self.table, self.year, self.month, self.startday, self.endday)))
+
+        log(lambda: "Starting hour retrieval from table %s" % self.table)
+
+        self.cur = self.conn.cursor()
+        with self.conn:
+            # self.query = (self.__QQ % (self.table, self.year, self.month, self.startday, self.endday)) if self.__Q == 2 else (self.__QQ % (self.table, self.year, self.month, self.startday))
+            # dbg(lambda: self.query)
+            data = self.cur.execute(self.query)
+            rows = (len(self.cur.fetchall()))
+            log(lambda: "Rows retrieved: %d" % rows)
+            if (rows >= 1):
+                data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
+                rowcount = 0
+                for row in data:
+                    rowcount += 1
+                    # dbg(lambda: row)
+                    self.values = row[7] # x is string representation of list
+                    self.values = ast.literal_eval(self.values) # convert x to real list
+
+                    for n, v in enumerate(self.values):
+                        self.values[n] = int(self.values[n])
+                        if (rowcount == 1) and (n >= self.starthour):
+                            self.hourlist.append((n, v))
+                            if (len(args) == 1) and (n == self.endhour):
+                                break
+                        elif (rowcount == 2) and (n <= self.endhour):
+                            self.hourlist.append((n, v))
+                    # dbg(lambda: self.hourlist)
+
+            else:
+                return 0
+
+        self.conn.close()
+        # dbg(lambda: self.lst)
+        # self.values = tmp[:]
+
+        log(lambda: "Retrieved list:")
+        log(lambda: self.lst)
+        return self.lst
+
     def retrieve_day(self, year, month, day, table):
         """
         Retrieve data from table dayhours_X.
@@ -183,6 +265,84 @@ class plotData:
 
     def __init__(self):
         self.DB = retrieveData()
+
+    def plot_hours(self, *args):
+        """
+        Reads from table dayhours_X.
+        Plot hours from given starthour up to endhour.
+        Plot spans a max of 2 days with a minimum of 1 hour and a maximum of 24 hours.
+        Minimum arguments is 5, maximum is 7 in this order:
+            energytype: 'E', year: 2021, month: 3, startday: 2, starthour: 5, endday: 3, endhour: 6
+            energytype: 'E', year: 2021, month: 3, startday: 2, starthour: 5, endhour: 6
+            energytype: 'E', year: 2021, month: 3, startday: 2, starthour: 5
+        plot_hours(arguments) examples:
+            plot_hours("E", 2021, 3, 2, 12, 3, 11)
+            plot_hours("E", 2021, 3, 2, 12, 11)
+            plot_hours("E", 2021, 3, 2, 12)
+        """
+        if (len(args) > 7):
+            return log(lambda: "Maximum arguments of 7 exceeded")
+        elif (len(args) < 5):
+            return log(lambda: "Minimum arguments is 5")
+
+        self.etype = args[0]
+        self.table = Vars.conf("dbtables")[self.etype][1]
+        self.year = args[1]
+        self.month = args[2]
+        self.startday = args[3]
+        self.starthour = args[4]
+        if (len(args) == 7):
+            self.endday = args[5]
+            self.endhour = args[6]
+            lst = self.DB.retrieve_hours(self.table,self.year,self.month,self.startday,self.starthour,self.endday,self.endhour) # retrieve data from database
+        elif (len(args) == 6):
+            self.endhour = args[5]
+            lst = self.DB.retrieve_hours(self.table,self.year,self.month,self.startday,self.starthour,self.endhour) # retrieve data from database
+        else:
+            lst = self.DB.retrieve_hours(self.table,self.year,self.month,self.startday,self.starthour) # retrieve data from database
+
+        if lst == 0:
+            log(lambda: "No Data")
+            return 0
+
+        self.columns = [Vars.lang("U"), Vars.lang("W"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("U"), Vars.lang("L"), Vars.lang("M3")] if self.etype == 'G' else None
+
+        self.hours = lst[-1]
+        data = {}
+        highlst = []
+        total = 0
+        for n, v in enumerate(self.hours):
+            data[self.hours[n][0]] = int(self.hours[n][1])
+            highlst.append(self.hours[n][1])
+            total += int(self.hours[n][1])
+            # dbg(lambda: self.hours[n])
+        high = int(max(highlst) + max(highlst)/3)
+
+        df = pd.DataFrame(data.items(), columns = self.columns[:2])
+        dbg(lambda: df)
+
+        self.month = datetime.date(1900,int(self.month),1).strftime('%B')
+
+        self.title = (
+            Vars.lang('dayhourtitle') % (self.month, self.startday, self.year, self.columns[1], int(total/1000), self.columns[2])
+            if (self.endday in locals())
+            else Vars.lang('customhourtitle') % (self.month, self.startday, self.endday, self.year, self.columns[1], int(total/1000), self.columns[2]))
+
+        fig = px.bar(
+            df,
+            x = df[self.columns[0]],
+            y = df[self.columns[1]],
+            range_y = (0,high),
+            title = (self.title),
+        )
+        fig.update_layout(
+            xaxis_type = 'category' # change x axis type so that plotly does not arrange overlapping day hours
+        )
+        # log(lambda: "Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
+        fig.show()
+
+        dbg(lambda: fig)
+        return fig
 
     def plot_day_hour(self, year, month, day, etype):
         """
@@ -438,7 +598,15 @@ def main():#*kwargs):
     # retrieveData().retrieve_day(2021,2,27)
     # retrieveData().retrieve_year(2021, 2, "yeardays_e")
     # DashDebug()
-
+    # retrieveData().retrieve_hours('dayhours_g', 2021, 3, 2, 3, 3, 6) # year: 2021, month: 3, startday: 2, starthour: 5, endday: 3, endhour: 6
+    # retrieveData().retrieve_hours('dayhours_e', 2021, 2, 1, 12) # year: 2020, month: 10, startday: 1, starthour: 12
+    # retrieveData().retrieve_hours('dayhours_e', 2021, 3, 2, 11, 18) # year: 2020, month: 11, startday: 2, starthour: 11, endhour: 18
+    # plotData().plot_hours('G', 2021, 3, 2, 3, 3, 6) # year: 2021, month: 3, startday: 2, starthour: 5, endday: 3, endhour: 6
+    plotData().plot_hours('E', 2021, 4, 18, 18, 19, 23) # year: 2021, month: 3, startday: 2, starthour: 5, endday: 3, endhour: 6
+    # plotData().plot_hours('E', 2021, 2, 1, 12) # year: 2020, month: 10, startday: 1, starthour: 12
+    # plotData().plot_hours('E', 2021, 3, 2, 11, 18) # year: 2020, month: 11, startday: 2, starthour: 11, endhour: 18
+    # plotData().plot_hours(1,2,3,4,5,6,7,8)
+    # plotData().plot_hours(1,2,3,4)
     # plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now,"G")
     # plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now,"E")
     # plotData().plot_month_day(2021,4,'E')
@@ -447,7 +615,7 @@ def main():#*kwargs):
     # plotData().plot_year_day(2020,'G')
     # plotData().plot_year_month(2020,'G')
     # plotData().plot_year_month(2021,'E')
-    log(lambda: "Nothing to see here!")
+    log(lambda: "I function...")
 
 if __name__ == '__main__':
         main()

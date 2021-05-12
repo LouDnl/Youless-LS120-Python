@@ -13,17 +13,39 @@ class Runtime:
     DEBUG = True # enable/disable debug messages
     LOG = True # enable/disable log messages
 
-    dt = datetime.datetime.today() # get current datetime
-    date_now = dt
-    current_date = ("{:4d}-{:02d}-{:02d}".format(dt.year,dt.month,dt.day))
-    current_time = ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
-    today = ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day))
-    yesterday = ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day-1))
-    day_now = date_now.day
-    month_now = date_now.month
-    last_month = date_now.month-1
-    year_now = date_now.year #% 100 # last two digits
-    last_year = date_now.year-1 # last year
+    @staticmethod
+    def td(request):
+        # dt
+        dt = datetime.datetime.today()
+
+        if (request == 'dt'):
+            return dt
+        elif (request == 'current_date'):
+            return ("{:4d}-{:02d}-{:02d}".format(dt.year,dt.month,dt.day))
+        elif (request == 'current_time'):
+            return ("{:02d}:{:02d}:{:02d}".format(dt.hour,dt.minute,dt.second))
+        elif (request == 'today'):
+            return ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day))
+        elif (request == 'yesterday'):
+            return ("{:4d},{:02d},{:02d}".format(dt.year,dt.month,dt.day-1))
+        elif (request == 'seconds'):
+            return dt.second
+        elif (request == 'day_now'):
+            return dt.day
+        elif (request == 'day_yesterday'):
+            return dt.day-1
+        elif (request == 'month_now'):
+            return dt.month
+        elif (request == 'last_month'):
+            return dt.month-1
+        elif (request == 'year_now'):
+            return dt.year #% 100 # last two digits
+        elif (request == 'last_year'):
+            return dt.year-1 # last year
+        else:
+            pass
+
+
 
 class Vars:
     ## Static variables
@@ -135,6 +157,10 @@ class Vars:
             """
                 SELECT * FROM %s WHERE year = %s AND month = %s AND day = %s
             """,
+            "s_dayhours2":
+            """
+                SELECT * FROM %s WHERE year = %s AND month = %s AND day IN (%s, %s)
+            """,
             "s_yeardays":
             """
                 SELECT * FROM %s WHERE year = %s AND month = %s
@@ -160,24 +186,30 @@ class Vars:
         "JSON": "f=j&", # json link
         "M": "m=", # url represented in months (number) 1 to 12 and goes back 1 year, kWh for E and m3 for G
         "W": "d=", # url represented per day, history goes back 70 days, Watt for E and ltr for G
-        "D": "h=", # url represented in 20 parts of half an hour with usage per minute, counting back from the current moment. Watt for E
-        "H": "w=",  # url represented in 30 parts of 8 hours per part in 10 minute representations, counting back from the current moment. Watt for E and ltr for G
+        "D": "h=", # url represented in 20 parts of half an hour (10 hours total) with usage per minute, counting back from the current moment (last entry of page 1). Watt for E
+        "H": "w=",  # url represented in 30 parts of 8 hours (10 days total) per part in 47 representations (10 minutes), counting back from the current moment -10mins (last entry of page 1). Watt for E and ltr for G
         "maxDayPage": 70, # max for d=
         "minDayPage": 1, # min for d=
         "maxMonthPage": 12, # max for m=
         "minMonthPage": 1, # min for m=
         "maxMinutePage": 20, # max for h=
         "minMinutePage": 1, # min for h=
+        "maxTenMinPage": 30, # max for w=
+        "minTenMinPage": 1, # min for w=
         "maxHour": 24, # max hour in a day -1
         "minHour": 0, # min hour in a day
         "maxMinute": 29, # max minutes per part for h=
         "minMinute": 0, # min minutes per part for h=
+        "minTen": 0, # min entry for w=
+        "maxTen": 47, # max entry for w=
     }
 
     ## Languages
     __langNL = {
-        "livegraphtitle": "Live verbruik: {} watt, {} {}uur",
+        "livegraphtitle": "Live verbruik: {} watt, {} {}uur<br>Meterstand: {} {}",
         "liveminutegraphtitle": "Live verbruik per minuut: {} watt, {} {} uur",
+        "tenminutegraphtitle": "Verbruik per tien minuten:",
+        "customhourtitle": "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
         "dayhourtitle": "%s %d %d %s per uur, totaal verbruik: %g %s",
         "yearmonthtitle": "%s %d %s per dag, totaal verbruik: %g %s",
         "yeardaytitle": "jaar %d %s per dag, totaal verbruik: %g %s",
@@ -197,8 +229,9 @@ class Vars:
     }
 
     __langEN = {
-        "livegraphtitle": "Live usage: {} watt, {} {} hours",
+        "livegraphtitle": "Live usage: {} watt, {} {} hours<br>Meter: {} {}",
         "liveminutegraphtitle": "Live usage per minute: {} watt, {} {} hour",
+        "customhourtitle": "%s %d - %d %d %s per hour, total usage: %g %s",
         "dayhourtitle": "%s %d %d %s per hour, total usage: %g %s",
         "yearmonthtitle": "%s %d %s per day, total usage: %g %s",
         "yeardaytitle": "year %d %s per day, total usage: %g %s",
@@ -240,7 +273,8 @@ def dbg(s):
     dbg(lambda: "TEXT and %s" % variable)
     """
     if Runtime.DEBUG:
-        print(s())
+        print("DEBUG: ", s())
+        # print(s())
 
 # log messages method
 def log(s):

@@ -306,7 +306,7 @@ class parseData:
                 year = jsonDate.date().strftime('%Y')
                 monthNo = jsonDate.date().strftime('%m')
                 monthName = jsonDate.date().strftime('%B')
-                thismonth = Runtime.dt.strftime('%Y-%m-01')
+                thismonth = Runtime.td('dt').strftime('%Y-%m-01')
                 rawValues = readapi['val']
                 lst = []
                 for y, s in enumerate(rawValues):

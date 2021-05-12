@@ -52,6 +52,7 @@ class readLiveData:
         self.__day = Vars.web("W")
         self.__stats = Vars.web("STATS")
         self.__D = Vars.web("D")
+        self.__H = Vars.web("H")
 
     def readLive(self):
         """
@@ -73,7 +74,7 @@ class readLiveData:
         self.maxMinute = Vars.web("maxMinute")
         self.minMinute = Vars.web("minMinute")
         self.counter = self.maxPage
-        e = {}
+        data = {}
         time = []
         watts = []
 
@@ -97,10 +98,48 @@ class readLiveData:
                 i += 1
             # log(lambda: self.date)
             self.counter -= 1
-        e['time'] = time
-        e['watts'] = watts
+        data['time'] = time
+        data['watts'] = watts
         # log(lambda: e)
-        return e
+        return data
+
+    # def readTenMinutes(self):
+    #     """
+    #     Import per ten minute data from Youless 120
+    #     Is always 1 minute behind live
+    #     """
+    #     self.maxPage = Vars.web("maxTenMinPage")
+    #     self.minPage = Vars.web("minTenMinPage")
+    #     self.maxEntry = Vars.web("maxTen")
+    #     self.minEntry = Vars.web("minTen")
+    #     self.counter = self.minPage
+    #     data = {}
+    #     time = []
+    #     watts = []
+    #
+    #     while (self.counter <= self.maxPage):
+    #         self.api = requests.get(self.__url + self.__ele + self.__json + self.__H + str(self.counter)).json()
+    #         # log(lambda: self.api)
+    #         self.date = datetime.datetime.strptime(self.api['tm'], '%Y-%m-%dT%H:%M:%S')
+    #         i = self.minEntry
+    #         while (i <= self.maxEntry):
+    #             h = self.date.hour
+    #             m = self.date.minute + (10 * i)
+    #             if (m == 60):
+    #                 h += 1
+    #                 m = 0
+    #             self.time = '%02d:%02d' % (h,m)# str(self.date.time())[0:5]
+    #             self.watt = int(self.api['val'][i])
+    #             time.append(self.time)
+    #             watts.append(self.watt)
+    #             dbg(lambda: 'Time: {} Usage: {} Watt'.format(self.time, self.watt))
+    #             i += 1
+    #         # log(lambda: self.date)
+    #         self.counter += 1
+    #     data['time'] = time
+    #     data['watts'] = watts
+    #     log(lambda: data)
+    #     # return data
 
 class plotLiveData: # only plots Energy at the moment
 
@@ -155,18 +194,23 @@ class plotLiveData: # only plots Energy at the moment
                 n_intervals=0
             ),
             dcc.Interval(
-                id='interval-component-minutes',
+                id='interval-component-minute',
                 interval=60*1000, # 60 seconds in milliseconds
                 n_intervals=0
             ),
             dcc.Interval(
-                id='interval-component-halfhourly',
-                interval=3600*1000, # 3600 seconds (1 hour) in milliseconds
+                id='interval-component-quarterhour',
+                interval=900*1000, # 900 seconds (15 minutes) in milliseconds
                 n_intervals=0
             ),
             dcc.Interval(
-                id='interval-component-hourly',
-                interval=1800*1000, # 1800 seconds (half hour) in milliseconds
+                id='interval-component-halfhour',
+                interval=1800*1000, # 1800 seconds (1 hour) in milliseconds
+                n_intervals=0
+            ),
+            dcc.Interval(
+                id='interval-component-hour',
+                interval=3600*1000, # 3600 seconds (half hour) in milliseconds
                 n_intervals=0
             )#,
             # html.Pre(
@@ -182,7 +226,7 @@ class plotLiveData: # only plots Energy at the moment
         @app.callback(
             # Output
             Output('updatedb', 'children'),
-            Input('interval-component-halfhourly', 'n_intervals')
+            Input('interval-component-quarterhour', 'n_intervals')
         )
         def updatedb(n):
             db.main()
@@ -209,7 +253,7 @@ class plotLiveData: # only plots Energy at the moment
 
             total = l['cnt']
             # graphtitle = "Live verbruik: {} watt, {} {} uur ".format(live,date,time)
-            graphtitle = Vars.lang('livegraphtitle').format(live,date,time)
+            graphtitle = Vars.lang('livegraphtitle').format(live,date,time,total,Vars.lang('KWH'))
             maxusage = max(livedict['wattlst'])
             # log(lambda: livedict)
 
@@ -228,7 +272,7 @@ class plotLiveData: # only plots Energy at the moment
 
         @app.callback(
             Output('minuteGraph', 'figure'),
-            Input('interval-component-minutes', 'n_intervals')
+            Input('interval-component-minute', 'n_intervals')
         )
         def update_minutegraph_live(n):
             dt = datetime.now() # get current datetime
@@ -252,66 +296,66 @@ class plotLiveData: # only plots Energy at the moment
 
         @app.callback(
             Output('d_today', 'figure'),
-            Input('interval-component-halfhourly', 'n_intervals')
+            Input('interval-component-halfhour', 'n_intervals')
         )
         def d_today(n):
-            fig = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now, self.elist[0])
+            fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_now'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_yesterday', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_yesterday(n):
-            fig = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1, self.elist[0])
+            fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_yesterday'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_currmonth', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_currmonth(n):
-            fig = plotData().plot_month_day(Runtime.year_now, Runtime.month_now, self.elist[0])
+            fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_lastmonth', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_lastmonth(n):
-            fig = plotData().plot_month_day(Runtime.year_now, Runtime.last_month, self.elist[0])
+            fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_year1', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_year1(n):
-            fig = plotData().plot_year_month(Runtime.year_now, self.elist[0])
+            fig = plotData().plot_year_month(Runtime.td('year_now'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_year2', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_year2(n):
-            fig = plotData().plot_year_month(Runtime.last_year, self.elist[0])
+            fig = plotData().plot_year_month(Runtime.td('last_year'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_fullyear1', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_fullyear1(n):
-            fig = plotData().plot_year_day(Runtime.year_now, self.elist[0])
+            fig = plotData().plot_year_day(Runtime.td('year_now'), self.elist[0])
             return fig
 
         @app.callback(
             Output('d_fullyear2', 'figure'),
-            Input('interval-component-hourly', 'n_intervals')
+            Input('interval-component-hour', 'n_intervals')
         )
         def d_fullyear2(n):
-            fig = plotData().plot_year_day(Runtime.last_year, self.elist[0])
+            fig = plotData().plot_year_day(Runtime.td('last_year'), self.elist[0])
             return fig
 
 
