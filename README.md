@@ -35,7 +35,7 @@ The files are still full of debug logs and commented out test code.
 	- Automatic view of available data
 	- Buttons that click to available data
 	- ~~Live usage view~~
- - ~~Add GAS usage
+ - ~~Add GAS usage~~
  - ~~Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append~~
  - ~~Create automatic readout from LS120~~
  - ~~Make webpage available on linux server~~
