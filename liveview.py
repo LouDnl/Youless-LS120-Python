@@ -250,7 +250,7 @@ class plotLiveData: # only plots Energy at the moment
             #         'height': '275px'
             #     }
             # )
-        ])
+        ], style=Vars.css('page_css'))
         
         # app.css.append_css({
         #     #'external_url': Vars.path + Vars.cssname

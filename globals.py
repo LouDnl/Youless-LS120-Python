@@ -213,6 +213,7 @@ class Vars:
         "minTen": 0, # min entry for w=
         "maxTen": 47, # max entry for w=
         "css": {
+            "page_css": {'position': 'fixed', 'top': '0', 'left': '0', 'right': '0', 'bottom': '0', 'overflow': 'auto', 'width': '100%', 'height': '100%'},
             "row_title": {'text-align':'center', 'font-size': 'x-large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
             "subrow_title": {'text-align':'center', 'font-size': 'large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
             "table_css": {'margin': '0px', 'padding': '0px'},
