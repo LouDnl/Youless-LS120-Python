@@ -13,24 +13,33 @@ The files are still full of debug logs and commented out test code.
  - Read data from SQLite3 database
  - Convert read data to list based on wanted items
  - Convert list to Pandas DataFrame based on wanted items
+ - Liveview.py plots live, daily, monthly and yearly Electricity and GAS usage and automatically updates the database
+   - webpage is available to what is set in globals.py
  - Plot DataFrame with plotly to webpage with Dash
 	- Shown data is fixed to what is asked for in plotEnergy.py > dashtest()
 	- webpage is only locally available to where the script is executed
- - Liveview.py plots live, daily, monthly and yearly Electricity usage and automatically updates the database
+ - globals.py contains all settings, no need to edit the other files
+
+## requirements.txt
+ - Contains all needed libraries/modules
 
 ## To Do:
  - Add extra notations for more clarity
- - Add GAS usage
- - ~~Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append~~
+ - Remove commented out code
+ - Combine reused code to functions
  - Convert read database data to Pandas DataFrame directly
- - ~~Create automatic readout from LS120~~
- - Separate webpage from plot script
- - ~~Make webpage available on linux server~~
+ - Add quick tutorial to create a linux service that always runs
+ - Add quick tutorial on how to install requirements.txt
  - Create interactive Dash website with:
+	- Separate webpage from plot script
 	- Automatic view of available data
 	- Buttons that click to available data
 	- ~~Live usage view~~
- - Tidy up files
+ - ~~Add GAS usage
+ - ~~Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append~~
+ - ~~Create automatic readout from LS120~~
+ - ~~Make webpage available on linux server~~
+ 
  
 ## Some example views
 ![Realtime view](liverealtime.png)\
