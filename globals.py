@@ -9,9 +9,15 @@ from __future__ import division
 import sys, os, datetime, time
 import warnings
 
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+
 class Runtime:
-    DEBUG = True # enable/disable debug messages
-    LOG = True # enable/disable log messages
+    DEBUG = False # enable/disable debug messages and enable/disable Dash-Flask debug mode
+    LOG = False # enable/disable log messages
+    DASHDEBUG = True # enable/disable local serving of dash webservices
+    # SERVE = False # enable/disable local serving of dash webservices
 
     @staticmethod
     def td(request):
@@ -49,10 +55,12 @@ class Runtime:
 
 class Vars:
     ## Static variables
-    ip = '192.168.0.5'
-    port = '8080'
+    local_ip = '127.0.0.1'
+    external_ip = '192.168.0.5'
+    port = '80'
     path = "./" # static path, assumes db is in same folder as script
     dbname = "youless.db"
+    # cssname = "plotly.css"
 
     ## Unused variables
     months = (range(1,13,1)) # url months
@@ -176,6 +184,8 @@ class Vars:
     __web = {
         "LANG": "NL", # NL or EN only for now
         "LOCALE": "nl_NL.utf8", # Need to set this to nl_NL er en_US aswell
+        # "LANG": "EN", # NL or EN only for now
+        # "LOCALE": "en_US.utf8", # Need to set this to nl_NL er en_US aswell        
         "ENCODING": "utf-8",
         "HEADERS": { "Accept-Language": "en-US, en;q=0.5"},
         "URL": "http://192.168.0.40", # base url
@@ -202,6 +212,12 @@ class Vars:
         "minMinute": 0, # min minutes per part for h=
         "minTen": 0, # min entry for w=
         "maxTen": 47, # max entry for w=
+        "css": {
+            "row_title": {'text-align':'center', 'font-size': 'x-large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
+            "subrow_title": {'text-align':'center', 'font-size': 'large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
+            "table_css": {'margin': '0px', 'padding': '0px'},
+            "column_css": {'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'}
+        }
     }
 
     ## Languages
@@ -225,7 +241,14 @@ class Vars:
         "WH": "Watt uur",
         "KM": "Kubieke Meter",
         "M3": "m3",
-        "L": "Liter"
+        "L": "Liter",
+        "ELE": "Elektriciteit verbruik",
+        "GAS": "Gas verbruik",
+        "LIVE": "Live Informatie Elektriciteit",
+        "TOYE": "Vandaag en gisteren",
+        "CMLM": "Deze maand en vorige maand",
+        "TYLYM": "Dit jaar en vorig jaar in maanden",
+        "TYLYD": "Dit jaar en vorig jaar in dagen",        
     }
 
     __langEN = {
@@ -247,7 +270,14 @@ class Vars:
         "WH": "Watts hour",
         "KM": "Cubic meters",
         "M3": "m3",
-        "L": "Liter"
+        "L": "Liter",
+        "ELE": "Electricity usage",
+        "GAS": "Gas usage",
+        "LIVE": "Live Electricity Information",
+        "TOYE": "Today and yesterday",
+        "CMLM": "This month and last month",
+        "TYLYM": "This year and last year in months",
+        "TYLYD": "This year and last year in days",             
     }
 
     @staticmethod
@@ -257,6 +287,10 @@ class Vars:
     @staticmethod
     def web(name): # return items from web dictionary
         return Vars.__web[name]
+    
+    @staticmethod
+    def css(name): # return items from web dictionary
+        return Vars.__web['css'][name] # quick work around, needs fixing and combining with web() method
 
     @staticmethod
     def lang(text): # return items from language dictionary
@@ -264,6 +298,29 @@ class Vars:
             return Vars.__langNL[text]
         elif Vars.__web["LANG"] == "EN":
             return Vars.__langEN[text]
+
+    @staticmethod
+    def default_table(head,id1,id2,id3,id4):
+        return_table = dbc.Table([
+            html.Tr([
+               html.Th(head, colSpan=2, scope="col") 
+            ],style=Vars.css('row_title')),            
+            html.Tr([
+               html.Th(Vars.lang('ELE'), colSpan=2, scope="col", style=Vars.css('subrow_title'))
+            ]),        
+            html.Tr([
+                html.Td(dcc.Graph(id=id1), style=Vars.css('column_css')),
+                html.Td(dcc.Graph(id=id2), style=Vars.css('column_css'))
+            ]),
+            html.Tr([
+               html.Th(Vars.lang('GAS'), colSpan=2, scope="col", style=Vars.css('subrow_title'))
+            ]),                
+            html.Tr([
+                html.Td(dcc.Graph(id=id3), style=Vars.css('column_css')),
+                html.Td(dcc.Graph(id=id4), style=Vars.css('column_css'))
+            ])
+        ], style=Vars.css('table_css'), borderless=True)
+        return return_table
 
 # debug messages method
 def dbg(s):

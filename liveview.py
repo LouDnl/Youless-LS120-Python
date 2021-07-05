@@ -15,7 +15,8 @@ import requests
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
 
 # json
 import json
@@ -164,30 +165,58 @@ class plotLiveData: # only plots Energy at the moment
         # year_now = dt.year #% 100 # last two digits
         # last_year = dt.year-1 # last year
 
-        # d_today = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now)
-        # d_yesterday = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1)
-        # d_currmonth = plotData().plot_year_month(Runtime.year_now, Runtime.month_now)
-        # d_lastmonth = plotData().plot_year_month(Runtime.year_now, Runtime.last_month)
-        # d_year1 = plotData().plot_year(Runtime.year_now)
-        # d_year2 = plotData().plot_year(Runtime.last_year)
-        # d_fullyear1 = plotData().plot_year_day(Runtime.year_now)
-        # d_fullyear2 = plotData().plot_year_day(Runtime.last_year)
+        # e_today = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now)
+        # e_yesterday = plotData().plot_day_hour(Runtime.year_now,Runtime.month_now,Runtime.day_now-1)
+        # e_currmonth = plotData().plot_year_month(Runtime.year_now, Runtime.month_now)
+        # e_lastmonth = plotData().plot_year_month(Runtime.year_now, Runtime.last_month)
+        # e_year1 = plotData().plot_year(Runtime.year_now)
+        # e_year2 = plotData().plot_year(Runtime.last_year)
+        # e_fullyear1 = plotData().plot_year_day(Runtime.year_now)
+        # e_fullyear2 = plotData().plot_year_day(Runtime.last_year)
 
-        app = dash.Dash(__name__)
+        # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+        app = dash.Dash(
+                        __name__,
+                        # external_stylesheets=external_stylesheets
+                        external_stylesheets=[dbc.themes.BOOTSTRAP]
+        ) 
+        
+        # app.scripts.config.serve_locally = Runtime.SERVE # enable/disables local serving of the scripts
 
+        # live_table = html.Div([
+        #     dbc.Row([
+        #         dbc.Col(html.Div("LIVE TEST"))
+        #     ], style={'text-align':'center'}),
+        #     dbc.Row([
+        #         dbc.Col(dcc.Graph(id="liveGraph")),
+        #         dbc.Col(dcc.Graph(id="minuteGraph"))
+        #     ])
+        # ])
+        
+        
+        live_table = dbc.Table([
+            html.Tr([
+               html.Th(Vars.lang('LIVE'), colSpan=2, scope="col") 
+            ], style=Vars.css('row_title')),
+            html.Tr([
+                html.Td(dcc.Graph(id="liveGraph"), style=Vars.css('column_css')),
+                html.Td(dcc.Graph(id="minuteGraph"), style=Vars.css('column_css'))
+            ]),
+        ], style=Vars.css('table_css'), borderless=True)
+
+        today_yesterday_table = Vars.default_table(Vars.lang('TOYE'), "e_today", "e_yesterday", "g_today", "g_yesterday")
+        thismonth_lastmonth_table = Vars.default_table(Vars.lang('CMLM'), "e_currmonth", "e_lastmonth", "g_currmonth", "g_lastmonth")
+        thisyear_lastyear_month_table = Vars.default_table(Vars.lang('TYLYM'), "e_year1", "e_year2", "g_year1", "g_year2")
+        thisyear_lastyear_day_table = Vars.default_table(Vars.lang('TYLYD'), "e_fullyear1", "e_fullyear2", "g_fullyear1", "g_fullyear2")
+         
         app.layout = html.Div([
             # dcc.Graph(id="graph", figure=fig),
             html.Span(id='updatedb', style={'visibility': 'hidden'}),
-            dcc.Graph(id="liveGraph"),
-            dcc.Graph(id="minuteGraph"),
-            dcc.Graph(id="d_today"),
-            dcc.Graph(id="d_yesterday"),
-            dcc.Graph(id="d_currmonth"),
-            dcc.Graph(id="d_lastmonth"),
-            dcc.Graph(id="d_year1"),
-            dcc.Graph(id="d_year2"),
-            dcc.Graph(id="d_fullyear1"),
-            dcc.Graph(id="d_fullyear2"),
+            live_table,
+            today_yesterday_table,
+            thismonth_lastmonth_table,
+            thisyear_lastyear_month_table,
+            thisyear_lastyear_day_table,
             dcc.Interval(
                 id='interval-component-live',
                 interval=5*1000, # 5 seconds in milliseconds
@@ -222,6 +251,11 @@ class plotLiveData: # only plots Energy at the moment
             #     }
             # )
         ])
+        
+        # app.css.append_css({
+        #     #'external_url': Vars.path + Vars.cssname
+        #     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css' # plotly css
+        # })
 
         @app.callback(
             # Output
@@ -286,6 +320,7 @@ class plotLiveData: # only plots Energy at the moment
             fig = px.line(
                 x = e['time'], y = e['watts'],
                 title=graphtitle,
+                # width = 1300,
                 height = 500, #(maxusage + (maxusage / 3))
                 labels = {
                     "x": Vars.lang('T'),
@@ -295,69 +330,132 @@ class plotLiveData: # only plots Energy at the moment
             return fig
 
         @app.callback(
-            Output('d_today', 'figure'),
+            Output('e_today', 'figure'),
             Input('interval-component-halfhour', 'n_intervals')
         )
-        def d_today(n):
+        def e_today(n):
             fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_now'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_yesterday', 'figure'),
+            Output('e_yesterday', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_yesterday(n):
+        def e_yesterday(n):
             fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_yesterday'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_currmonth', 'figure'),
+            Output('g_today', 'figure'),
+            Input('interval-component-halfhour', 'n_intervals')
+        )
+        def g_today(n):
+            fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_now'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('g_yesterday', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_currmonth(n):
+        def g_yesterday(n):
+            fig = plotData().plot_day_hour(Runtime.td('year_now'),Runtime.td('month_now'),Runtime.td('day_yesterday'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('e_currmonth', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def e_currmonth(n):
             fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_lastmonth', 'figure'),
+            Output('e_lastmonth', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_lastmonth(n):
+        def e_lastmonth(n):
             fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_year1', 'figure'),
+            Output('g_currmonth', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_year1(n):
+        def g_currmonth(n):
+            fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('g_lastmonth', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def g_lastmonth(n):
+            fig = plotData().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('e_year1', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def e_year1(n):
             fig = plotData().plot_year_month(Runtime.td('year_now'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_year2', 'figure'),
+            Output('e_year2', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_year2(n):
+        def e_year2(n):
             fig = plotData().plot_year_month(Runtime.td('last_year'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_fullyear1', 'figure'),
+            Output('g_year1', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_fullyear1(n):
+        def g_year1(n):
+            fig = plotData().plot_year_month(Runtime.td('year_now'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('g_year2', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def g_year2(n):
+            fig = plotData().plot_year_month(Runtime.td('last_year'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('e_fullyear1', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def e_fullyear1(n):
             fig = plotData().plot_year_day(Runtime.td('year_now'), self.elist[0])
             return fig
 
         @app.callback(
-            Output('d_fullyear2', 'figure'),
+            Output('e_fullyear2', 'figure'),
             Input('interval-component-hour', 'n_intervals')
         )
-        def d_fullyear2(n):
+        def e_fullyear2(n):
             fig = plotData().plot_year_day(Runtime.td('last_year'), self.elist[0])
             return fig
 
+        @app.callback(
+            Output('g_fullyear1', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def g_fullyear1(n):
+            fig = plotData().plot_year_day(Runtime.td('year_now'), self.elist[1])
+            return fig
+
+        @app.callback(
+            Output('g_fullyear2', 'figure'),
+            Input('interval-component-hour', 'n_intervals')
+        )
+        def g_fullyear2(n):
+            fig = plotData().plot_year_day(Runtime.td('last_year'), self.elist[1])
+            return fig
 
         ## Display json structure in frame below graph
         # @app.callback(
@@ -366,7 +464,7 @@ class plotLiveData: # only plots Energy at the moment
         # def display_structure(fig_json):
         #     return json.dumps(fig_json, indent=2)
 
-        app.run_server(debug=True, host=ip, port=port)
+        app.run_server(debug=Runtime.DASHDEBUG, host=ip, port=port)
 
 # def updateDB_nonworking(text):
 #     log(lambda: text)
@@ -400,7 +498,13 @@ def main():
 
 
     # updateDB() # disable auto update database on start for now
-    plotLiveData().plotLive(Vars.ip, Vars.port)
+
+    if (Runtime.DASHDEBUG):
+        ip = Vars.local_ip
+    else:
+        ip = Vars.external_ip
+
+    plotLiveData().plotLive(ip, Vars.port)
 
 if __name__ == '__main__':
     main()

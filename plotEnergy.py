@@ -334,6 +334,8 @@ class plotData:
             y = df[self.columns[1]],
             range_y = (0,high),
             title = (self.title),
+            # width = 1100,
+            height = 500, #(maxusage + (maxusage / 3))            
         )
         fig.update_layout(
             xaxis_type = 'category' # change x axis type so that plotly does not arrange overlapping day hours
