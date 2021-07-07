@@ -1,7 +1,11 @@
+"""
+    Script to create the youless database, does not overwrite existing database.
+    Checks if the database exists, creates it if none existant.
+    If database exists checks if all tables are created, if not creates them.
+"""
+
 import sqlite3 as sl
 
-# import globals
-# import globals as gl
 from globals import *
 
 path = Vars.path + Vars.dbname
@@ -42,23 +46,27 @@ def isTableExists(table):
         #
         #     return True
 
-if not isSqlite3Db(path):
-    log(lambda: "Database {} non existant, creating database".format(Vars.dbname))
-    for v in Vars.conf("dbtables").values():
-        for i in v:
-            con = sl.connect(path)
-            with con:
-                con.execute(Vars.conf("queries")[i])
-                log(lambda: "Table {} created".format(i))
-else:
-    log(lambda: "Database {} exists, checking and creating tables".format(Vars.dbname))
-    for v in Vars.conf("dbtables").values():
-        for i in v:
-            if (isTableExists(i)):
-                log(lambda: "Table {} already exists, doing nothing".format(i))
-            else:
-                log(lambda: "Table {} does not exist, creating".format(i))
+def main():
+    if not isSqlite3Db(path):
+        log(lambda: "Database {} non existant, creating database".format(Vars.dbname))
+        for v in Vars.conf("dbtables").values():
+            for i in v:
                 con = sl.connect(path)
-                # CREATE TABLE
                 with con:
                     con.execute(Vars.conf("queries")[i])
+                    log(lambda: "Table {} created".format(i))
+    else:
+        log(lambda: "Database {} exists, checking and creating tables".format(Vars.dbname))
+        for v in Vars.conf("dbtables").values():
+            for i in v:
+                if (isTableExists(i)):
+                    log(lambda: "Table {} already exists, doing nothing".format(i))
+                else:
+                    log(lambda: "Table {} does not exist, creating".format(i))
+                    con = sl.connect(path)
+                    # CREATE TABLE
+                    with con:
+                        con.execute(Vars.conf("queries")[i])
+                        
+if __name__ == '__main__':
+    main()

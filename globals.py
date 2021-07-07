@@ -6,16 +6,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import division
 
-import sys, os, datetime, time
+import sys, os, datetime, time, locale
 import warnings
-
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_bootstrap_components as dbc
 
 class Runtime:
     DEBUG = False # enable/disable debug messages and enable/disable Dash-Flask debug mode
-    LOG = False # enable/disable log messages
+    LOG = True # enable/disable log messages
     DASHDEBUG = True # enable/disable local serving of dash webservices
     # SERVE = False # enable/disable local serving of dash webservices
 
@@ -48,6 +44,12 @@ class Runtime:
             return dt.year #% 100 # last two digits
         elif (request == 'last_year'):
             return dt.year-1 # last year
+        elif (request == 'date_live'):
+            return dt.strftime("%A %d %B %Y")
+        elif (request == 'time_live'):
+            return dt.strftime("%H:%M")
+        elif (request == 'secs_live'):
+            return dt.strftime("%H:%M:%S")        
         else:
             pass
 
@@ -71,6 +73,7 @@ class Vars:
     # lowMonths = (4,6,9,11)
     # highMonths = (1,3,5,7,8,10,12)
     # excMonth = 2
+    livedict = {'timelst': [], 'wattlst': []} # dictionary for storing live data
 
     ## Configuration dictionary
     __conf = {
@@ -180,7 +183,7 @@ class Vars:
         }
     }
 
-    ## Youless webpage links and naming
+    ## Youless webpage links, naming and css settings
     __web = {
         "LANG": "NL", # NL or EN only for now
         "LOCALE": "nl_NL.utf8", # Need to set this to nl_NL er en_US aswell
@@ -221,114 +224,152 @@ class Vars:
         }
     }
 
-    ## Languages
-    __langNL = {
-        "livegraphtitle": "Live verbruik: {} watt, {} {}uur<br>Meterstand: {} {}",
-        "liveminutegraphtitle": "Live verbruik per minuut: {} watt, {} {} uur",
-        "tenminutegraphtitle": "Verbruik per tien minuten:",
-        "customhourtitle": "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
-        "dayhourtitle": "%s %d %d %s per uur, totaal verbruik: %g %s",
-        "yearmonthtitle": "%s %d %s per dag, totaal verbruik: %g %s",
-        "yeardaytitle": "jaar %d %s per dag, totaal verbruik: %g %s",
-        "yeartitle": "jaar %d %s per maand, totaal verbruik: %g %s",
-        "D": "Dag",
-        "DT": "Datum",
-        "KH": "kiloWatt uur",
-        "KWH": "kWh",
-        "M": "maand",
-        "T": "Tijd",
-        "U": "Uur",
-        "W": "Watt",
-        "WH": "Watt uur",
-        "KM": "Kubieke Meter",
-        "M3": "m3",
-        "L": "Liter",
-        "ELE": "Elektriciteit verbruik",
-        "GAS": "Gas verbruik",
-        "LIVE": "Live Informatie Elektriciteit",
-        "TOYE": "Vandaag en gisteren",
-        "CMLM": "Deze maand en vorige maand",
-        "TYLYM": "Dit jaar en vorig jaar in maanden",
-        "TYLYD": "Dit jaar en vorig jaar in dagen",        
+    ## Languages. Tuple within a dictionary item. 0 == NL, 1 == EN
+    __langDict = {
+        "livegraphtitle": 
+        (
+            "Live verbruik: {} watt, {} {}uur<br>Meterstand: {} {}",
+            "Live usage: {} watt, {} {} hours<br>Meter: {} {}",
+        ),
+        "liveminutegraphtitle": 
+        (
+            "Live verbruik per minuut: {} watt, {} {} uur",
+            "Live usage per minute: {} watt, {} {} hour",
+        ),
+        "tenminutegraphtitle": 
+        (
+            "Verbruik per tien minuten:",
+            "Usage per ten minutes:",
+        ),
+        "customhourtitle": (
+            "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
+            "%s %d - %d %d %s per hour, total usage: %g %s",
+        ),
+        "dayhourtitle": 
+        (
+            "%s %d %d %s per uur, totaal verbruik: %g %s",
+            "%s %d %d %s per hour, total usage: %g %s",
+        ),
+        "yearmonthtitle": 
+        (
+            "%s %d %s per dag, totaal verbruik: %g %s",
+            "%s %d %s per day, total usage: %g %s",
+        ),
+        "yeardaytitle": 
+        (
+            "jaar %d %s per dag, totaal verbruik: %g %s",
+            "year %d %s per day, total usage: %g %s",
+        ),
+        "yeartitle": 
+        (
+            "jaar %d %s per maand, totaal verbruik: %g %s",
+            "year %d %s per month, total usage: %g %s",
+        ),
+        "ELE": 
+        (
+            "Elektriciteit verbruik",
+            "Electricity usage",
+        ),
+        "GAS": 
+        (
+            "Gas verbruik",
+            "Gas usage",
+        ),
+        "LIVE": 
+        (
+            "Live Informatie Elektriciteit",
+            "Live Electricity Information",
+        ),
+        "TOYE": 
+        (
+            "Vandaag en gisteren",
+            "Today and yesterday",
+        ),
+        "CMLM": 
+        (
+            "Deze maand en vorige maand",
+            "This month and last month",
+        ),
+        "TYLYM": 
+        (
+            "Dit jaar en vorig jaar in maanden",
+            "This year and last year in months",
+        ),
+        "TYLYD": 
+        (
+            "Dit jaar en vorig jaar in dagen",
+            "This year and last year in days",
+        ),
+        "TOD": ("Vandaag", "Today"),
+        "YDY": ("Gisteren", "Yesterday"),
+        "TMO": ("Deze maand", "This month"),
+        "LMO": ("Vorige maand", "Last month"),
+        "TYE": ("Dit jaar", "This year"),
+        "LYE": ("Vorig jaar", "Last year"),
+        "D": ("Dag","Day",),
+        "DT": ("Datum","Date",),
+        "M": ("maand","month"),
+        "T": ("Tijd","Time"),
+        "U": ("Uur","Hour"),
+        "KH": ("kiloWatt uur","kiloWatt hour"),
+        "KWH": ("kWh","kWh"),
+        "W": ("Watt","Watts"),
+        "WH": ("Watt uur","Watts hour"),
+        "KM": ("Kubieke Meter","Cubic meters"),
+        "M3": ("m3","m3"),
+        "L": ("Liter","Liter"),
     }
-
-    __langEN = {
-        "livegraphtitle": "Live usage: {} watt, {} {} hours<br>Meter: {} {}",
-        "liveminutegraphtitle": "Live usage per minute: {} watt, {} {} hour",
-        "customhourtitle": "%s %d - %d %d %s per hour, total usage: %g %s",
-        "dayhourtitle": "%s %d %d %s per hour, total usage: %g %s",
-        "yearmonthtitle": "%s %d %s per day, total usage: %g %s",
-        "yeardaytitle": "year %d %s per day, total usage: %g %s",
-        "yeartitle": "year %d %s per month, total usage: %g %s",
-        "D": "Day",
-        "DT": "Date",
-        "KH": "kiloWatt hour",
-        "KWH": "kWh",
-        "M": "month",
-        "T": "Time",
-        "U": "Hour",
-        "W": "Watts",
-        "WH": "Watts hour",
-        "KM": "Cubic meters",
-        "M3": "m3",
-        "L": "Liter",
-        "ELE": "Electricity usage",
-        "GAS": "Gas usage",
-        "LIVE": "Live Electricity Information",
-        "TOYE": "Today and yesterday",
-        "CMLM": "This month and last month",
-        "TYLYM": "This year and last year in months",
-        "TYLYD": "This year and last year in days",             
-    }
+ 
+    @staticmethod
+    def youlessLocale():
+        """
+            returns the locale setting
+        """
+        locale.setlocale(locale.LC_ALL, Vars.web("LOCALE"))
+    
+    @staticmethod
+    def lang(text):
+        """
+            returns item from language dictionary
+            usage:
+            Vars.lang("keyname") returns the contents of the key
+            return value is either english or dutch based on the setting in the __web dictionary under LANG.
+        """
+        if Vars.__web["LANG"] == "NL":
+            return Vars.__langDict[text][0]
+        elif Vars.__web["LANG"] == "EN":
+            return Vars.__langDict[text][1]   
 
     @staticmethod
     def conf(name): # return items from config dictionary
+        """
+            returns item from the conf dictionary
+            usage:
+            Vars.conf("keyname") returns contents of the key
+            For nested dictionaries use as followed:
+            Vars.conf("keyname")["2nd_keyname"]["etc"]
+        """
         return Vars.__conf[name]
 
     @staticmethod
-    def web(name): # return items from web dictionary
-        return Vars.__web[name]
-    
-    @staticmethod
-    def css(name): # return items from web dictionary
-        return Vars.__web['css'][name] # quick work around, needs fixing and combining with web() method
-
-    @staticmethod
-    def lang(text): # return items from language dictionary
-        if Vars.__web["LANG"] == "NL":
-            return Vars.__langNL[text]
-        elif Vars.__web["LANG"] == "EN":
-            return Vars.__langEN[text]
-
-    @staticmethod
-    def default_table(head,id1,id2,id3,id4):
-        return_table = dbc.Table([
-            html.Tr([
-               html.Th(head, colSpan=2, scope="col") 
-            ],style=Vars.css('row_title')),            
-            html.Tr([
-               html.Th(Vars.lang('ELE'), colSpan=2, scope="col", style=Vars.css('subrow_title'))
-            ]),        
-            html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Vars.css('column_css')),
-                html.Td(dcc.Graph(id=id2), style=Vars.css('column_css'))
-            ]),
-            html.Tr([
-               html.Th(Vars.lang('GAS'), colSpan=2, scope="col", style=Vars.css('subrow_title'))
-            ]),                
-            html.Tr([
-                html.Td(dcc.Graph(id=id3), style=Vars.css('column_css')),
-                html.Td(dcc.Graph(id=id4), style=Vars.css('column_css'))
-            ])
-        ], style=Vars.css('table_css'), borderless=True)
-        return return_table
+    def web(name, *args): 
+        """
+            returns item from web dictionary, add second argument to return dictionary from key
+            can be used either as Vars.web("keyname") and return its contents
+            or as Vars.web("keyname", "secondkeyname") and returns the dictionary within the dictionary
+            This will also work: Vars.web("keyname")["second_keyname"]["etc"]        
+        """        
+        if (args == ()):
+            return Vars.__web[name]
+        else:
+            return Vars.__web[name].get(args[0]) # only the first extra argument will be processed, others will be ignored
 
 # debug messages method
 def dbg(s):
     """
-    Usage:
-    dbg(lambda: "TEXT")
-    dbg(lambda: "TEXT and %s" % variable)
+        Usage:
+        dbg(lambda: "TEXT")
+        dbg(lambda: "TEXT and %s" % variable)
     """
     if Runtime.DEBUG:
         print("DEBUG: ", s())
@@ -337,9 +378,9 @@ def dbg(s):
 # log messages method
 def log(s):
     """
-    Usage:
-    log(lambda: "TEXT")
-    log(lambda: "TEXT and %s" % variable)
+        Usage:
+        log(lambda: "TEXT")
+        log(lambda: "TEXT and %s" % variable)
     """
     if Runtime.LOG:
         print(s())
@@ -354,3 +395,9 @@ def log(s):
 #     for k, v in types.items():
 #         if t in v:
 #             return(v)
+
+def main():
+    log(lambda: "I do not run on my own...")
+
+if __name__ == '__main__':
+        main()    

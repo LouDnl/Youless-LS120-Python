@@ -1,3 +1,7 @@
+"""
+    Script to import data from Youless LS120 device to sqlite3 database.
+"""
+
 import sys, os, datetime, re, time
 import requests
 from requests import get
@@ -14,6 +18,9 @@ sys.stdin.reconfigure(encoding=Vars.web("ENCODING")) # set encoding
 sys.stdout.reconfigure(encoding=Vars.web("ENCODING")) # set encoding
 
 class parseData:
+    """
+        class to import data from youless into sqlite database.
+    """
 
     def __init__(self):
         self.__headers = Vars.web("HEADERS") # acceptable html headers
@@ -43,7 +50,7 @@ class parseData:
 
     def insert_dayhours(self, conn, insertion, table, type):
         """
-        Store values in sqlite3 database in the following format (all strings):
+        Function to store values in sqlite3 database in the following format (all strings):
         date, year, week, month, monthname, day, yearday, values per hour
         example:
         ('2021-04-03', 2021, 13, 4, 'April', 3, 93, '[428.0, 385.0, 400.0, 391.0, 386.0, 398.0, 403.0, 485.0, 759.0, 611.0, 650.0, 1225.0, 626.0, 940.0, 534.0, 630.0, 751.0, 630.0, 1194.0, 951.0, 934.0, 893.0, 628.0, 581.0]')
@@ -95,9 +102,9 @@ class parseData:
         # log(lambda: x)
         # log(lambda: existingValues)
 
-        #log(lambda: first_set)
+        # log(lambda: first_set)
 
-        #log(lambda: sec_set)
+        # log(lambda: sec_set)
 
         # log(lambda: differences)
 
@@ -126,7 +133,7 @@ class parseData:
 
     def insert_yeardays(self, conn, insertion, thismonth, table, type):
         """
-        Store values in sqlite3 database in the following format (all strings):
+        Function to store values in sqlite3 database in the following format (all strings):
         date, year, month, monthname, values per day
         example:
         ('2020-12-01', 2020, 12, 'December', '[18.85, 15.12, 19.72, 13.76, 13.93, 20.7, 17.66, 18.57, 14.14, 13.23, 12.72, 15.38, 16.89, 16.06, 15.39, 22.16, 15.0, 15.34, 12.61, 17.17, 18.85, 15.25, 20.22, 13.51, 15.35, 13.49, 12.99, 21.87, 14.2, 16.7, 15.45]')
@@ -229,7 +236,7 @@ class parseData:
 
     def parseDays(self):
         """
-        Retrieve daily Electricity and Gas hour value from Youless 120 with a maximum history of 70 days back
+        Function to retrieve daily Electricity and Gas hour value from Youless 120 with a maximum history of 70 days back
         """
         for x in Vars.conf("dbtables"):
             self.__table = Vars.conf("dbtables")[x][1]
@@ -279,7 +286,7 @@ class parseData:
 
     def parseMonths(self):#, type):
         """
-        Retrieve days per month from Youless 120 up to 11 months back for Electricity and Gas
+        Function to retrieve days per month from Youless 120 up to 11 months back for Electricity and Gas
         and call insert_yeardays() with the values
         """
         # self.tablecount = len(Variables.dbtables)
@@ -343,8 +350,6 @@ def main():
         parseData().parseMonths()
     # finally:
         # f.close()
-
-
 
 if __name__ == '__main__':
     main()
