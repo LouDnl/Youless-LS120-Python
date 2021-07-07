@@ -5,6 +5,7 @@ The files are still full of debug logs and commented out test code.
 # Youless-LS120
 
 ## Functions:
+ - Dash text is available in Dutch and English (setting in globals.py)
  - Realtime view with about 2 minutes history, updates every 5 seconds (not stored in database)
  - Live view per minute up to 10 hours history, updates every minute (not stored in database)
  - Import and process Energy (Electricity and Gas) data from Youless LS120 into SQLite3 database 
