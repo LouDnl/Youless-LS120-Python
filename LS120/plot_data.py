@@ -1,32 +1,38 @@
+#!/bin/sh
 """
-    Plot data read from database to graph
+   plot_data.py
+   
+   This file converts data received in list form from read_data.py into a pandas dataframe and returns a plotly figure
 """
+import sys, datetime
 
-import sys, os, datetime, re, time, locale
-import calendar
-import sqlite3 as sl
-from sqlite3 import IntegrityError
-import ast # for converting string representation of a list to a list
-
+# pandas dataframe
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objs as go
 
-# youless specific
-from globals import *
-from readData import *
-# from readLive import *
+# plotly figure
+import plotly.express as px
+
+# Youless setup
+from LS120.settings import Youless
+from LS120.read_data import read_data
 
 # set language
-Vars.youlessLocale()
+Youless.youless_locale()
 
-#
-# livedict = Vars.livedict #{'timelst': [], 'wattlst': []} # dictionary for storing live data
+# initialize logging
+import logging
+import LS120.logger_init
+logger = logging.getLogger(__name__)
+logger.debug("plot_data.py started")
 
-class plotData:
+
+class plot_data:
+    """
+        class to convert list to plotly figure
+    """
     
     def __init__(self):
-        self.DB = retrieveData()
+        self.DB = read_data()
 
     def plot_hours(self, *args):
         """
@@ -43,12 +49,12 @@ class plotData:
             plot_hours("E", 2021, 3, 2, 12)
         """
         if (len(args) > 7):
-            return log(lambda: "Maximum arguments of 7 exceeded")
+            return logger.info("Maximum arguments of 7 exceeded")
         elif (len(args) < 5):
-            return log(lambda: "Minimum arguments is 5")
+            return logger.info("Minimum arguments is 5")
 
         self.etype = args[0]
-        self.table = Vars.conf("dbtables")[self.etype][1]
+        self.table = Youless.sql("dbtables")[self.etype][1]
         self.year = args[1]
         self.month = args[2]
         self.startday = args[3]
@@ -64,10 +70,10 @@ class plotData:
             lst = self.DB.retrieve_hours(self.table,self.year,self.month,self.startday,self.starthour) # retrieve data from database
 
         if lst == 0:
-            log(lambda: "No Data")
+            logger.error("No Data")
             return 0
 
-        self.columns = [Vars.lang("U"), Vars.lang("W"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("U"), Vars.lang("L"), Vars.lang("M3")] if self.etype == 'G' else None
+        self.columns = [Youless.lang("U"), Youless.lang("W"), Youless.lang("KWH")] if self.etype == 'E' else [Youless.lang("U"), Youless.lang("L"), Youless.lang("M3")] if self.etype == 'G' else None
 
         self.hours = lst[-1]
         data = {}
@@ -80,14 +86,14 @@ class plotData:
         high = int(max(highlst) + max(highlst)/3)
 
         df = pd.DataFrame(data.items(), columns = self.columns[:2])
-        dbg(lambda: df)
+        logger.debug(df)
 
         self.month = datetime.date(1900,int(self.month),1).strftime('%B')
 
         self.title = (
-            Vars.lang('dayhourtitle') % (self.month, self.startday, self.year, self.columns[1], int(total/1000), self.columns[2])
+            Youless.lang('dayhourtitle') % (self.month, self.startday, self.year, self.columns[1], int(total/1000), self.columns[2])
             if (self.endday in locals())
-            else Vars.lang('customhourtitle') % (self.month, self.startday, self.endday, self.year, self.columns[1], int(total/1000), self.columns[2]))
+            else Youless.lang('customhourtitle') % (self.month, self.startday, self.endday, self.year, self.columns[1], int(total/1000), self.columns[2]))
 
         fig = px.bar(
             df,
@@ -100,9 +106,8 @@ class plotData:
         fig.update_layout(
             xaxis_type = 'category' # change x axis type so that plotly does not arrange overlapping day hours
         )
-        fig.show()
 
-        dbg(lambda: fig)
+        logger.debug(fig)
         return fig
 
     def plot_day_hour(self, year, month, day, etype):
@@ -119,8 +124,8 @@ class plotData:
         self.month = month
         self.day = day
         self.etype = etype
-        self.table = Vars.conf("dbtables")[self.etype][1]
-        self.columns = [Vars.lang("U"), Vars.lang("W"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("U"), Vars.lang("L"), Vars.lang("M3")] if self.etype == 'G' else None
+        self.table = Youless.sql("dbtables")[self.etype][1]
+        self.columns = [Youless.lang("U"), Youless.lang("W"), Youless.lang("KWH")] if self.etype == 'E' else [Youless.lang("U"), Youless.lang("L"), Youless.lang("M3")] if self.etype == 'G' else None
 
         if (type(self.month) == str):
             self.mN = datetime.datetime.strptime(self.month, '%B')
@@ -128,7 +133,7 @@ class plotData:
         self.monthName = datetime.date(1900,self.month,1).strftime('%B')
         lst = self.DB.retrieve_day(self.year,self.month,self.day,self.table) # retrieve data from database
         if lst == 0:
-            log(lambda: "No Data")
+            logger.error("No Data")
             return 0
         data = {}
         high = max(lst[3]) + max(lst[3])/3
@@ -144,9 +149,9 @@ class plotData:
             x = df[self.columns[0]],
             y = df[self.columns[1]],
             range_y = (0,high),
-            title = (Vars.lang('dayhourtitle') % (self.monthName, self.day, self.year, self.columns[1], float(totalWatt/1000), self.columns[2])),
+            title = (Youless.lang('dayhourtitle') % (self.monthName, self.day, self.year, self.columns[1], float(totalWatt/1000), self.columns[2])),
         )
-        log(lambda: "Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
+        logger.info("Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
         return fig
 
     def plot_month_day(self, year, month, etype):
@@ -161,8 +166,8 @@ class plotData:
         self.year = year
         self.month = month
         self.etype = etype
-        self.table = Vars.conf("dbtables")[self.etype][0]
-        self.columns = [Vars.lang("D"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("D"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
+        self.table = Youless.sql("dbtables")[self.etype][0]
+        self.columns = [Youless.lang("D"), Youless.lang("KH"), Youless.lang("KWH")] if self.etype == 'E' else [Youless.lang("D"), Youless.lang("KM"), Youless.lang("M3")] if self.etype == 'G' else None
 
         if (type(self.month) == str):
             self.mN = datetime.datetime.strptime(self.month, '%B')
@@ -170,7 +175,7 @@ class plotData:
         self.monthName = datetime.date(1900,self.month,1).strftime('%B')
         lst = self.DB.retrieve_month(self.year, self.month, self.table) # retrieve data from database
         if lst == 0:
-            log(lambda: "No Data")
+            logger.error("No Data")
             return 0
         data = {}
         high = max(lst[2]) + max(lst[2])/3
@@ -180,18 +185,16 @@ class plotData:
             totalkWh += elem
 
         df = pd.DataFrame(data.items(), columns = self.columns[:2])
-        # lastdf = df[self.columns[0]][len(df[self.columns[0]]) - 1]
 
         fig = px.bar(
             df,
             x = df[self.columns[0]],
             y = df[self.columns[1]],
             range_y = (0, high),
-            # range_x = (0, lastdf),
 
-            title=(Vars.lang('yearmonthtitle') % (self.monthName, self.year, self.columns[1], totalkWh, self.columns[2])),
+            title=(Youless.lang('yearmonthtitle') % (self.monthName, self.year, self.columns[1], totalkWh, self.columns[2])),
         )
-        log(lambda: "Plotting month %d of year %d" % (self.month, self.year))
+        logger.info("Plotting month %d of year %d" % (self.month, self.year))
         return fig
 
     def plot_year_day(self, year, etype):
@@ -204,12 +207,12 @@ class plotData:
         """
         self.year = year
         self.etype = etype
-        self.table = Vars.conf("dbtables")[self.etype][0]
-        self.columns = [Vars.lang("D"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("D"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
+        self.table = Youless.sql("dbtables")[self.etype][0]
+        self.columns = [Youless.lang("D"), Youless.lang("KH"), Youless.lang("KWH")] if self.etype == 'E' else [Youless.lang("D"), Youless.lang("KM"), Youless.lang("M3")] if self.etype == 'G' else None
         self.type = 2 # equals year with month totals
         lst = self.DB.retrieve_year(self.year, self.type, self.table)
         if lst == 0:
-            log(lambda: "No Data")
+            logger.error("No Data")
             return 0
         data = {}
         totalkWh = 0.0
@@ -228,25 +231,27 @@ class plotData:
             x = df[self.columns[0]],
             y = df[self.columns[1]],
             range_y = (0,high),
-            title = (Vars.lang('yeardaytitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
+            title = (Youless.lang('yeardaytitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
         )
-        log(lambda: "Plotting year %d" % (self.year))
+        logger.info("Plotting year %d" % (self.year))
         return fig
 
     def plot_year_month(self, year, etype):
         """
         Reads from table yeardays_X and returns figure
         plot the year with month totals into a graph
-        plot_year(2021) year as integer
+        plot_year(2021, 'E') 
+        year as integer
+        etype as string ('E' for Electricity, 'G' for Gas)
         """
         self.year = year
         self.etype = etype
-        self.table = Vars.conf("dbtables")[self.etype][0]
-        self.columns = [Vars.lang("M"), Vars.lang("KH"), Vars.lang("KWH")] if self.etype == 'E' else [Vars.lang("M"), Vars.lang("KM"), Vars.lang("M3")] if self.etype == 'G' else None
+        self.table = Youless.sql("dbtables")[self.etype][0]
+        self.columns = [Youless.lang("M"), Youless.lang("KH"), Youless.lang("KWH")] if self.etype == 'E' else [Youless.lang("M"), Youless.lang("KM"), Youless.lang("M3")] if self.etype == 'G' else None
         self.type = 1 # equals year with month totals
         lst = self.DB.retrieve_year(self.year, self.type, self.table)
         if lst == 0:
-            log(lambda: "No Data")
+            logger.error("No Data")
             return 0
         data = {}
         months = {}
@@ -264,7 +269,7 @@ class plotData:
             x = df[self.columns[0]],
             y = df[self.columns[1]],
             range_y = (0,high),
-            title = (Vars.lang('yeartitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
+            title = (Youless.lang('yeartitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
         )
         fig.update_layout(
             xaxis=dict(
@@ -273,11 +278,8 @@ class plotData:
                 ticktext = list(months.values())
             )
         )
-        log(lambda: "Plotting year %d" % (self.year))
+        logger.info("Plotting year %d" % (self.year))
         return fig
 
-def main():
-    log(lambda: "I do not run on my own...")
-
 if __name__ == '__main__':
-        main()
+    sys.exit()

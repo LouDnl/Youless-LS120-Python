@@ -1,39 +1,47 @@
+#!/bin/sh
 """
-    Read data from sqlite database
+    retrieve_data.py
+    
+    This file reads data from youless sqlite3 database and returns it as a list
 """
-
-import sys, os, datetime, re, time, locale
-import calendar
-import sqlite3 as sl
-from sqlite3 import IntegrityError
+import sys
 import ast # for converting string representation of a list to a list
 
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objs as go
+# sqlite
+import sqlite3 as sl
 
-# youless specific
-from globals import *
+# Youless setup
+from LS120.settings import Settings, Youless
 
 # set language
-Vars.youlessLocale()
+Youless.youless_locale()
 
-class retrieveData:
+# initialize logging
+import logging
+import LS120.logger_init
+logger = logging.getLogger(__name__)
+logger.debug("read_data.py started")
+
+class read_data:
+    """
+        class to read data from youless database
+    """
+    
     # global class variables
-    __path = Vars.path + Vars.dbname
+    __path = Settings.path + Settings.dbname
 
     def __init__(self):
         """
         Automatic database connection when called
         """
-        self.__db_file = retrieveData.__path
-        log(lambda: "Starting database connection...")
+        self.__db_file = read_data.__path
+        logger.info("Starting database connection...")
         self.conn = None
         try:
             self.conn = sl.connect(self.__db_file)
-            log(lambda: "Connected to: %s" % self.__db_file)
+            logger.info("Connected to: %s" % self.__db_file)
         except Error as e:
-            log(lambda: e)
+            logger.error(e)
 
     def retrieve_hours(self, table, year, month, startday, starthour, *args):
         """
@@ -62,21 +70,21 @@ class retrieveData:
         if (len(args) == 2):
             self.endday = args[0]
             self.endhour = args[1]
-            self.query = (Vars.conf("queries")["s_dayhours2"] % (self.table, self.year, self.month, self.startday, self.endday))
+            self.query = (Youless.sql("queries")["s_dayhours2"] % (self.table, self.year, self.month, self.startday, self.endday))
             self.lst = [self.year,self.month,self.startday,self.starthour,self.endday,self.endhour,self.hourlist]
         elif (len(args) == 1):
             self.endhour = args[0]
-            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
+            self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
             self.lst = [self.year,self.month,self.startday,self.starthour,self.endhour,self.hourlist]
         else:
-            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
+            self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
             self.lst = [self.year,self.month,self.startday,self.starthour,self.hourlist]
-        log(lambda: "Starting hour retrieval from table %s" % self.table)
+        logger.info("Starting hour retrieval from table %s" % self.table)
         self.cur = self.conn.cursor()
         with self.conn:
             data = self.cur.execute(self.query)
             rows = (len(self.cur.fetchall()))
-            log(lambda: "Rows retrieved: %d" % rows)
+            logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
                 data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
                 rowcount = 0
@@ -97,8 +105,8 @@ class retrieveData:
                 return 0
 
         self.conn.close()
-        log(lambda: "Retrieved list:")
-        log(lambda: self.lst)
+        logger.debug("Retrieved list:")
+        logger.debug(self.lst)
         return self.lst
 
     def retrieve_day(self, year, month, day, table):
@@ -115,32 +123,27 @@ class retrieveData:
         self.month = month
         self.day = day
         self.table = table
-        log(lambda: "Starting day retrieval %d %d %d from table %s" % (self.year, self.month, self.day, self.table))
+        logger.info("Starting day retrieval %d %d %d from table %s" % (self.year, self.month, self.day, self.table))
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = (Vars.conf("queries")["s_dayhours"] % (self.table, str(self.year), str(self.month), str(self.day)))
+            self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, str(self.year), str(self.month), str(self.day)))
             data = self.cur.execute(self.query)
             rows = len(self.cur.fetchall())
-            log(lambda: "Rows retrieved: %d" % rows)
+            logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
                 data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
                 for row in data:
                     self.values = row[7] # x is string representation of list
                     self.values = ast.literal_eval(self.values) # convert x to real list
-                #     tmp = row[7]
-                #     tmp = tmp.replace(" ", "")
-                #     tmp = tmp.replace("[", "")
-                #     tmp = tmp.replace("]", "")
-                #     tmp = tmp.split(',')
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
             else:
                 return 0
         self.conn.close()
-        # self.values = tmp[:]
+
         self.lst = [self.year,self.month,self.day,self.values]
-        log(lambda: "Retrieved list:")
-        log(lambda: self.lst)
+        logger.debug("Retrieved list:")
+        logger.debug(self.lst)
         return self.lst
 
     def retrieve_month(self, year, month, table):
@@ -155,32 +158,27 @@ class retrieveData:
         self.year = year
         self.month = month
         self.table = table
-        log(lambda: "Starting month retrieval %d %d from table %s" % (self.year, self.month, self.table))
+        logger.info("Starting month retrieval %d %d from table %s" % (self.year, self.month, self.table))
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = (Vars.conf("queries")["s_yeardays"] % (self.table, str(self.year), str(self.month)))
+            self.query = (Youless.sql("queries")["s_yeardays"] % (self.table, str(self.year), str(self.month)))
             data = self.conn.execute(self.query)
             rows = len(data.fetchall())
-            log(lambda: "Rows retrieved: %d" % rows)
+            logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
                 data = self.conn.execute(self.query)
                 for row in data:
                     self.values = row[4] # x is string representation of list
                     self.values = ast.literal_eval(self.values) # convert x to real list
-                    # tmp = row[4]
-                    # tmp = tmp.replace(" ", "")
-                    # tmp = tmp.replace("[", "")
-                    # tmp = tmp.replace("]", "")
-                    # tmp = tmp.split(',')
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
             else:
                 return 0
         self.conn.close()
-        # self.values = tmp[:] # copy tmp list to values list
+
         self.lst = [self.year,self.month,self.values]
-        log(lambda: "Retrieved list:")
-        log(lambda: self.lst)
+        logger.debug("Retrieved list:")
+        logger.debug(self.lst)
         return self.lst
 
     def retrieve_year(self, year, totals, table):
@@ -197,26 +195,21 @@ class retrieveData:
         self.totals = totals
         self.table = table
         if (self.totals != 1 and self.totals != 2):
-            log(lambda: "error: type can only be 1 or 2")
+            logger.error("error: type can only be 1 or 2")
             return "error: type can only be 1 or 2"
-        log(lambda: "Starting year retrieval %d" % (self.year))
+        logger.info("Starting year retrieval %d" % (self.year))
         self.cur = self.conn.cursor()
         with self.conn:
-            self.query = (Vars.conf("queries")["so_yeardays"] % (self.table, str(self.year)))
+            self.query = (Youless.sql("queries")["so_yeardays"] % (self.table, str(self.year)))
             data = self.conn.execute(self.query)
             rows = len(data.fetchall())
-            log(lambda: "Rows retrieved: %d" % rows)
+            logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
                 data = self.conn.execute(self.query)
                 self.lst = []
                 for row in data:
                     self.values = row[4] # x is string representation of list
                     self.values = ast.literal_eval(self.values) # convert x to real list
-                    # tmp = row[4]
-                    # tmp = tmp.replace(" ", "")
-                    # tmp = tmp.replace("[", "")
-                    # tmp = tmp.replace("]", "")
-                    # tmp = tmp.split(',')
                     total = 0
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
@@ -230,12 +223,9 @@ class retrieveData:
             else:
                 return 0
         self.conn.close()
-        log(lambda: "Retrieved list:")
-        log(lambda: self.lst)
+        logger.debug("Retrieved list:")
+        logger.debug(self.lst)
         return self.lst
 
-def main():
-    log(lambda: "I do not run on my own...")
-
 if __name__ == '__main__':
-        main()        
+    sys.exit()

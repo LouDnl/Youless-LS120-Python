@@ -1,0 +1,35 @@
+# logger_config.yaml
+# configuration file for the logging module
+version: 1
+disable_existing_loggers: true
+
+formatters:
+    standard:
+        format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: standard
+        stream: ext://sys.stdout
+    debug_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: standard
+        filename: debug.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+
+root:
+    level: WARNING
+    handlers: [console, debug_file_handler]
+    propogate: yes
+
+# loggers:
+#     code_test:
+#         level: DEBUG
+#         handlers: [console, debug_file_handler]
+#         propagate: no
+

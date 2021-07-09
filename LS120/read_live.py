@@ -1,51 +1,42 @@
+#!/bin/sh
 """
-    Read live data from Youless LS120
+    read_live.py
+    
+    This file reads live data directly from a Youless LS120
 """
+import sys, datetime
 
-#defaults
-import sys, os, datetime, re, time, sched, locale
-
-# web connects
+# web
 import requests
 
-# graph
-# import plotly.express as px
+# Youless setup
+from LS120.settings import Youless
 
-# dash webpage
-# import dash
-# import dash_core_components as dcc
-# import dash_html_components as html
-# import dash_bootstrap_components as dbc
-# from dash.dependencies import Input, Output, State
+# set language
+Youless.youless_locale()
 
-# json
-import json
-
-# youless specific
-from globals import *
-# from plotData import *
-# from webElements import *
-# import importData_toDB as db
-
-# Set locale
-Vars.youlessLocale()
+# initialize logging
+import logging
+import LS120.logger_init
+logger = logging.getLogger(__name__)
+logger.debug("read_live.py started")
 
 ## Data read with these methods get read live from the youless device and is not store in a database.
-class readLiveData:
+class read_live_data:
 
     def __init__(self):
-        self.__headers = Vars.web("HEADERS") # acceptable html headers
-        self.__url = Vars.web("URL") # base url
-        self.__ele = Vars.web("ELE")
-        self.__gas = Vars.web("GAS")
-        self.__json = Vars.web("JSON")
-        self.__month = Vars.web("M")
-        self.__day = Vars.web("W")
-        self.__stats = Vars.web("STATS")
-        self.__D = Vars.web("D")
-        self.__H = Vars.web("H")
+        self.__headers = Youless.web("HEADERS") # acceptable html headers
+        self.__url = Youless.web("URL") # base url
+        self.__ele = Youless.web("ELE")
+        self.__gas = Youless.web("GAS")
+        self.__json = Youless.web("JSON")
+        self.__month = Youless.web("M")
+        self.__day = Youless.web("W")
+        self.__stats = Youless.web("STATS")
+        self.__D = Youless.web("D")
+        self.__H = Youless.web("H")
 
-    def readLive(self):
+    def read_live(self):
         """
         read live energy data from Youless 120
         returns a dictionary with data
@@ -54,7 +45,7 @@ class readLiveData:
         self.api = requests.get(self.__url + self.__stats + self.__json).json()
         return self.api
 
-    def readMinutes(self):
+    def read_minutes(self):
         """
         read per minute energy data from Youless 120
         data is always 1 minute behind live
@@ -62,10 +53,10 @@ class readLiveData:
         example return:
         {'time': ['value', 'value'], 'watts': ['value', 'value']}
         """
-        self.maxPage = Vars.web("maxMinutePage")
-        self.minPage = Vars.web("minMinutePage")
-        self.maxMinute = Vars.web("maxMinute")
-        self.minMinute = Vars.web("minMinute")
+        self.maxPage = Youless.web("maxMinutePage")
+        self.minPage = Youless.web("minMinutePage")
+        self.maxMinute = Youless.web("maxMinute")
+        self.minMinute = Youless.web("minMinute")
         self.counter = self.maxPage
         data = {}
         time = []
@@ -86,22 +77,23 @@ class readLiveData:
                 time.append(self.time)
                 watts.append(self.watt)
 
-                dbg(lambda: 'Time: {} Usage: {} Watt'.format(self.time, self.watt))
+                logger.debug('Time: {} Usage: {} Watt'.format(self.time, self.watt))
                 i += 1
             self.counter -= 1
         data['time'] = time
         data['watts'] = watts
+        logger.debug(data)
         return data
 
-    def readTenMinutes(self):
+    def read_ten_minutes(self):
         """
         Import per ten minute data from Youless 120
         Not working properly yet.
         """
-        self.maxPage = Vars.web("maxTenMinPage")
-        self.minPage = Vars.web("minTenMinPage")
-        self.maxEntry = Vars.web("maxTen")
-        self.minEntry = Vars.web("minTen")
+        self.maxPage = Youless.web("maxTenMinPage")
+        self.minPage = Youless.web("minTenMinPage")
+        self.maxEntry = Youless.web("maxTen")
+        self.minEntry = Youless.web("minTen")
         self.counter = self.minPage
         data = {}
         time = []
@@ -121,16 +113,13 @@ class readLiveData:
                 self.watt = int(self.api['val'][i])
                 time.append(self.time)
                 watts.append(self.watt)
-                dbg(lambda: 'Time: {} Usage: {} Watt'.format(self.time, self.watt))
+                logger.debug('Time: {} Usage: {} Watt'.format(self.time, self.watt))
                 i += 1
             self.counter += 1
         data['time'] = time
         data['watts'] = watts
-        log(lambda: data)
+        logger.debug(data)
         return data
 
-def main():
-    log(lambda: "I do not run on my own...")
-
 if __name__ == '__main__':
-        main()        
+    sys.exit()
