@@ -26,9 +26,18 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
  - Install them with: python -m pip install -r requirements.txt
 
 ## Usage:
+ - git clone the repository \
+ ```
+ git clone https://github.com/LouDnl/Youless-LS120.git
+ cd Youless-LS120
+ ```
  - Run either example files to get an idea of what is possible. \
- Otherwise see the description under the Package files
- - 
+ `python3 liveview_allgraphs.py` \
+ or \
+ `python3 test_view.py``
+ Otherwise see the description under the Package files 
+ - All package funtions have their own description, go check them out :)
+
 
 ## Example files:
 - liveview_allgraphs.py starts a flask webserver that displays all available graphs
@@ -42,15 +51,41 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 	if set to False the webserver will be hosted on remote_ip
 
  ## Package files:
- - settings.py contains user changeable settings like IP, path and language
- - constants.py contains all constant variables etc for the package.
- - create_database.py creates youless.db if needed or appends tables if needed
- - import_data.py reads static data from Youless LS120 and writes it to the database
- - read_data.py reads data from the database and returns lists with data
- - plot_data.py converts lists with data and returns plotly figures 
- - read_live.py reads live data fro the Youless LS120 and returns lists with data
+ - settings.py contains user changeable settings like IP, path and language \
+ this file has no external functions
+ - create_database.py creates youless.db if needed or appends tables if needed \
+ run this file to create the initial database file inside the LS120 folder \
+ `python3 LS120.create_database`
+ - import_data.py reads static data from Youless LS120 and writes it to the database \
+ run this file to import new data to the database \
+ `python3 LS120.import_data`
+ - read_data.py reads data from the database and returns lists with data \
+ available functions are:
+ 	- read_data.retrieve_hours()
+	- read_data.retrieve_day()
+	- read_data.retrieve_month()
+	- read_data.retrieve_year()
+ - plot_data.py converts lists with data and returns plotly figures  \
+ available functions are:
+	- plot_data.plot_hours()
+	- plot_data.plot_day_hour()
+	- plot_data.plot_month_day()
+	- plot_data.plot_year_day()
+	- plot_data.plot_year_month()
+ - read_live.py reads live data fro the Youless LS120 and returns lists with data \
+available functions are:
+	- read_live_data.read_live()
+	- read_live_data.read_minutes()
+	- ~~read_live_data.read_ten_minutes()~~ This function does not yet work
  - plot_live.py converts lists with live data and returns plotly figures
- - web_elements.py contains pre defined settings for both view files
+available functions are:
+	- plot_live.plot_live()
+	- plot_live.plot_minutes()
+	- ~~plot_live.plot_ten_minutes()~~ This function does not yet work
+ - web_elements.py contains pre defined settings for both example files \
+ they can also be used for your own dash page.
+ - constants.py contains all constant variables etc for the package. \
+ this file has no external functions
  - __init__.py makes package modules available and starts the logger
  - logger_config.yaml contains the logger settings.\
  by default the logger level is set to DEBUG under root. Set this to WARNING to disable most logging.
