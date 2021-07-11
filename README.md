@@ -34,7 +34,7 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
  - Run either example files to get an idea of what is possible. \
  `python3 liveview_allgraphs.py` \
  or \
- `python3 test_view.py``
+ `python3 test_view.py`
  Otherwise see the description under the Package files 
  - All package funtions have their own description, go check them out :)
 
