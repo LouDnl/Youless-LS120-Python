@@ -1,6 +1,5 @@
 # WORK IN PROGRESS
-This project is still in development. \
-The files are still full of debug logs and commented out test code.
+This project is still in development.
 
 # Youless-LS120
 
@@ -23,7 +22,14 @@ The files are still full of debug logs and commented out test code.
  - Convert read data to list based on wanted items
  - Convert list to Pandas DataFrame based on wanted items
  - Create dash based website with graphs
- 
+
+## Usage:
+ - 
+
+## requirements.txt
+ - Contains all needed libraries/modules
+ - Install them with: python -m pip install -r requirements.txt
+
 ## Files:
  - settings.py contains all settings and libraries, no need to edit the other files
  - create_database.py creates youless.db if needed or appends tables if needed
@@ -33,13 +39,6 @@ The files are still full of debug logs and commented out test code.
  - read_live.py reads live data fro the Youless LS120 and returns lists with data
  - plot_live.py converts lists with live data and returns plotly figures
  - web_elements.py contains pre defined settings for both view files 
-
-## requirements.txt
- - Contains all needed libraries/modules
- - Install them with: python -m pip install -r requirements.txt
-
-## Usage:
- - 
 
 ## To Do:
  - Add explanatory usage

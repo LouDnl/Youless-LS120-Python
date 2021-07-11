@@ -1,32 +1,32 @@
-#!/bin/sh
+#!/usr/bin/env python3
 """
     retrieve_data.py
-    
+
     This file reads data from youless sqlite3 database and returns it as a list
 """
 import sys
-import ast # for converting string representation of a list to a list
+import ast  # for converting string representation of a list to a list
 
 # sqlite
 import sqlite3 as sl
 
 # Youless setup
-from LS120.settings import Settings, Youless
+from .settings import Settings, Youless
+
+# initialize logging
+import logging
+logger = logging.getLogger(__name__)
+logger.debug("read_data.py started")
 
 # set language
 Youless.youless_locale()
 
-# initialize logging
-import logging
-import LS120.logger_init
-logger = logging.getLogger(__name__)
-logger.debug("read_data.py started")
 
 class read_data:
     """
         class to read data from youless database
     """
-    
+
     # global class variables
     __path = Settings.path + Settings.dbname
 
@@ -40,7 +40,7 @@ class read_data:
         try:
             self.conn = sl.connect(self.__db_file)
             logger.info("Connected to: %s" % self.__db_file)
-        except Error as e:
+        except Exception as e:
             logger.error(e)
 
     def retrieve_hours(self, table, year, month, startday, starthour, *args):
@@ -71,14 +71,14 @@ class read_data:
             self.endday = args[0]
             self.endhour = args[1]
             self.query = (Youless.sql("queries")["s_dayhours2"] % (self.table, self.year, self.month, self.startday, self.endday))
-            self.lst = [self.year,self.month,self.startday,self.starthour,self.endday,self.endhour,self.hourlist]
+            self.lst = [self.year, self.month, self.startday, self.starthour, self.endday, self.endhour, self.hourlist]
         elif (len(args) == 1):
             self.endhour = args[0]
             self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
-            self.lst = [self.year,self.month,self.startday,self.starthour,self.endhour,self.hourlist]
+            self.lst = [self.year, self.month, self.startday, self.starthour, self.endhour, self.hourlist]
         else:
             self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
-            self.lst = [self.year,self.month,self.startday,self.starthour,self.hourlist]
+            self.lst = [self.year, self.month, self.startday, self.starthour, self.hourlist]
         logger.info("Starting hour retrieval from table %s" % self.table)
         self.cur = self.conn.cursor()
         with self.conn:
@@ -86,12 +86,12 @@ class read_data:
             rows = (len(self.cur.fetchall()))
             logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
-                data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
+                data = self.cur.execute(self.query)  # execute query again because fetchall() mangles the data to a list of tuples with strings
                 rowcount = 0
                 for row in data:
                     rowcount += 1
-                    self.values = row[7] # x is string representation of list
-                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    self.values = row[7]  # x is string representation of list
+                    self.values = ast.literal_eval(self.values)  # convert x to real list
 
                     for n, v in enumerate(self.values):
                         self.values[n] = int(self.values[n])
@@ -131,17 +131,17 @@ class read_data:
             rows = len(self.cur.fetchall())
             logger.debug("Rows retrieved: %d" % rows)
             if (rows >= 1):
-                data = self.cur.execute(self.query) # execute query again because fetchall() mangles the data to a list of tuples with strings
+                data = self.cur.execute(self.query)  # execute query again because fetchall() mangles the data to a list of tuples with strings
                 for row in data:
-                    self.values = row[7] # x is string representation of list
-                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    self.values = row[7]  # x is string representation of list
+                    self.values = ast.literal_eval(self.values)  # convert x to real list
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
             else:
                 return 0
         self.conn.close()
 
-        self.lst = [self.year,self.month,self.day,self.values]
+        self.lst = [self.year, self.month, self.day, self.values]
         logger.debug("Retrieved list:")
         logger.debug(self.lst)
         return self.lst
@@ -168,15 +168,15 @@ class read_data:
             if (rows >= 1):
                 data = self.conn.execute(self.query)
                 for row in data:
-                    self.values = row[4] # x is string representation of list
-                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    self.values = row[4]  # x is string representation of list
+                    self.values = ast.literal_eval(self.values)  # convert x to real list
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
             else:
                 return 0
         self.conn.close()
 
-        self.lst = [self.year,self.month,self.values]
+        self.lst = [self.year, self.month, self.values]
         logger.debug("Retrieved list:")
         logger.debug(self.lst)
         return self.lst
@@ -208,15 +208,15 @@ class read_data:
                 data = self.conn.execute(self.query)
                 self.lst = []
                 for row in data:
-                    self.values = row[4] # x is string representation of list
-                    self.values = ast.literal_eval(self.values) # convert x to real list
+                    self.values = row[4]  # x is string representation of list
+                    self.values = ast.literal_eval(self.values)  # convert x to real list
                     total = 0
                     for v, n in enumerate(self.values):
                         self.values[v] = float(self.values[v])
                         total += float(self.values[v])
-                    if (self.totals == 1): # month totals
+                    if (self.totals == 1):  # month totals
                         self.tmplst = [[row[1], row[2], row[3], int(total)]]
-                    elif (self.totals == 2): # day totals
+                    elif (self.totals == 2):  # day totals
                         self.tmplst = [[row[1], row[2], row[3], self.values]]
                     self.lst.extend(self.tmplst)
                     self.tmplst.clear()
@@ -226,6 +226,7 @@ class read_data:
         logger.debug("Retrieved list:")
         logger.debug(self.lst)
         return self.lst
+
 
 if __name__ == '__main__':
     sys.exit()

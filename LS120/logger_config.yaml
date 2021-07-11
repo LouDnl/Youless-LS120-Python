@@ -23,7 +23,7 @@ handlers:
         encoding: utf8
 
 root:
-    level: WARNING
+    level: DEBUG
     handlers: [console, debug_file_handler]
     propogate: yes
 

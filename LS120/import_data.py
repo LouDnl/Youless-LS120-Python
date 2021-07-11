@@ -1,11 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env python3
 """
     import_data.py
-    
+
     This file imports data from a Youless LS120 device in to existing sqlite3 database.
 """
-import sys, datetime
-import ast # for converting string representation of a list to a list
+import sys
+import datetime
+import ast  # for converting string representation of a list to a list
 
 # web
 from requests import get
@@ -14,17 +15,17 @@ from requests import get
 import sqlite3 as sl
 
 # Youless setup
-from LS120.settings import Runtime, Settings, Youless
+from .settings import Runtime, Settings, Youless
 
 # initialize logging
 import logging
-import LS120.logger_init
 logger = logging.getLogger(__name__)
 logger.debug("import_data.py started")
 
 
-sys.stdin.reconfigure(encoding=Youless.web("ENCODING")) # set encoding
-sys.stdout.reconfigure(encoding=Youless.web("ENCODING")) # set encoding
+sys.stdin.reconfigure(encoding=Youless.web("ENCODING"))  # set encoding
+sys.stdout.reconfigure(encoding=Youless.web("ENCODING"))  # set encoding
+
 
 class parse_data:
     """
@@ -32,8 +33,8 @@ class parse_data:
     """
 
     def __init__(self):
-        self.__headers = Youless.web("HEADERS") # acceptable html headers
-        self.__url = Youless.web("URL") # base url
+        self.__headers = Youless.web("HEADERS")  # acceptable html headers
+        self.__url = Youless.web("URL")  # base url
         self.__ele = Youless.web("ELE")
         self.__gas = Youless.web("GAS")
         self.__snul = Youless.web("S0")
@@ -53,7 +54,7 @@ class parse_data:
         try:
             self.conn = sl.connect(db_file)
             logger.debug(("Connected to: {}".format(db_file)))
-        except Error as e:
+        except Exception as e:
             logger.error(e)
         return self.conn
 
@@ -71,40 +72,40 @@ class parse_data:
         self.type = type
         self.sql = Youless.sql("queries")["i_dayhours"]
         self.query = Youless.sql("queries")["s_table"]
-        self.datequery = (insertion[0].strip(),) # create primary key check
-        self.date = insertion[0] # create primary key check
+        self.datequery = (insertion[0].strip(),)  # create primary key check
+        self.date = insertion[0]  # create primary key check
 
         cur = conn.cursor()
 
-        self.check = cur.execute((self.query % self.table), self.datequery) # check the database for existing primary keys
+        self.check = cur.execute((self.query % self.table), self.datequery)  # check the database for existing primary keys
 
-        x = insertion[7] # x is string representation of list
-        x = ast.literal_eval(x) # convert x to real list
+        x = insertion[7]  # x is string representation of list
+        x = ast.literal_eval(x)  # convert x to real list
         lenX = len(x)
 
-        existingEntry = self.check.fetchall() # fetch the complete entry from the database
+        existingEntry = self.check.fetchall()  # fetch the complete entry from the database
 
         try:
-            existingKey = existingEntry[0][0] # assign existing key
-            existingValues = existingEntry[0][7] # assign existing value string
-            existingValues = ast.literal_eval(existingValues) # convert string representation of list to real list
-            first_set = set(existingValues) # create set from existing values
-            sec_set = set(x) # create set from new values
-            differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
+            existingKey = existingEntry[0][0]  # assign existing key
+            existingValues = existingEntry[0][7]  # assign existing value string
+            existingValues = ast.literal_eval(existingValues)  # convert string representation of list to real list
+            first_set = set(existingValues)  # create set from existing values
+            sec_set = set(x)  # create set from new values
+            differences = (first_set - sec_set).union(sec_set - first_set)  # compare differences between two sets
             differences = len(differences)
-        except:
+        except Exception:
             logger.debug("no existing Primary Key for {}".format(insertion[0]))
             if ('existingKey' not in locals()):
                 logger.debug("double check for existingKey, no existingKey.")
                 existingKey = None
 
-        if (existingKey is not None) and (differences == 0): # check if the primary key exists and list has 24 hour values
+        if (existingKey is not None) and (differences == 0):  # check if the primary key exists and list has 24 hour values
             logger.info("Primary key %s exists, has %i entries and %i differences, skipping!" % (self.date, lenX, differences))
             return
         else:
             try:
                 logger.info("Primarykey %s has %i entries and/or %i differences. Overwriting and appending data!" % (self.date, lenX, differences))
-            except:
+            except Exception:
                 logger.info("existingKey variable was not created, assigning None")
         try:
             cur.execute((self.sql % (self.table, self.type)), insertion)
@@ -119,8 +120,10 @@ class parse_data:
         """
         Function to store values in sqlite3 database in the following format (all strings):
         date, year, month, monthname, values per day
-        example:
-        ('2020-12-01', 2020, 12, 'December', '[18.85, 15.12, 19.72, 13.76, 13.93, 20.7, 17.66, 18.57, 14.14, 13.23, 12.72, 15.38, 16.89, 16.06, 15.39, 22.16, 15.0, 15.34, 12.61, 17.17, 18.85, 15.25, 20.22, 13.51, 15.35, 13.49, 12.99, 21.87, 14.2, 16.7, 15.45]')
+        example return:
+        ('2020-12-01', 2020, 12, 'December',
+        '[18.85, 15.12, 19.72, 13.76, 13.93, 20.7, 17.66, 18.57, 14.14, 13.23, 12.72, 15.38, 16.89, 16.06,
+        15.39, 22.16, 15.0, 15.34, 12.61, 17.17, 18.85, 15.25, 20.22, 13.51, 15.35, 13.49, 12.99, 21.87, 14.2, 16.7, 15.45]')
         INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
         INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
@@ -128,29 +131,29 @@ class parse_data:
         self.type = type
         self.sql = Youless.sql("queries")["i_yeardays"]
         self.query = Youless.sql("queries")["s_table"]
-        self.datequery = (insertion[0].strip(),) # create primary key check
-        self.date = insertion[0] # create primary key check
+        self.datequery = (insertion[0].strip(),)  # create primary key check
+        self.date = insertion[0]  # create primary key check
 
         cur = conn.cursor()
-        self.check = cur.execute((self.query % self.table), self.datequery) # check the database for existing primary keys
+        self.check = cur.execute((self.query % self.table), self.datequery)  # check the database for existing primary keys
 
-        x = insertion[4] # x is string representation of list
-        x = ast.literal_eval(x) # convert x to real list
+        x = insertion[4]  # x is string representation of list
+        x = ast.literal_eval(x)  # convert x to real list
         lenX = len(x)
 
         m = int(insertion[2])
 
-        existingEntry = self.check.fetchall() # fetch the complete entry from the database
+        existingEntry = self.check.fetchall()  # fetch the complete entry from the database
 
         try:
-            existingKey = existingEntry[0][0] # assign existing key
-            existingValues = existingEntry[0][4] # assign existing value string
-            existingValues = ast.literal_eval(existingValues) # convert string representation of list to real list
-            first_set = set(existingValues) # create set from existing values
-            sec_set = set(x) # create set from new values
-            differences = (first_set - sec_set).union(sec_set - first_set) # compare differences between two sets
+            existingKey = existingEntry[0][0]  # assign existing key
+            existingValues = existingEntry[0][4]  # assign existing value string
+            existingValues = ast.literal_eval(existingValues)  # convert string representation of list to real list
+            first_set = set(existingValues)  # create set from existing values
+            sec_set = set(x)  # create set from new values
+            differences = (first_set - sec_set).union(sec_set - first_set)  # compare differences between two sets
             differences = len(differences)
-        except:
+        except Exception:
             logger.debug("no existing Primary Key for {}".format(insertion[0]))
             if ('existingKey' not in locals()):
                 logger.info("existingKey variable was not created, assigning None")
@@ -162,7 +165,7 @@ class parse_data:
         else:
             try:
                 logger.info("Primary key is %s and has %i differences. Overwriting and appending data!" % (insertion[0], differences))
-            except:
+            except Exception:
                 logger.info("Primarykey did not exist. Creating new entry")
 
         try:
@@ -213,18 +216,17 @@ class parse_data:
                         break
                     finally:
                         lst.append(rawValues[y])
-                if (rawValues[y] == None):
+                if rawValues[y] is None:
                     lst.pop()
                 strlst = '{}'.format(lst)
-
-                task = (str(date),int(year),int(weekNo),int(monthNo),monthName,int(monthDay),int(yearDay),strlst)
+                task = (str(date), int(year), int(weekNo), int(monthNo), monthName, int(monthDay), int(yearDay), strlst)
                 self.insert_dayhours(self.conn, task, self.__table, self.__type)
                 lst.clear()
                 self.counter -= 1
             self.conn.close()
             logger.info("Database connection closed...")
 
-    def parse_months(self):#, type):
+    def parse_months(self):
         """
         Function to retrieve days per month from Youless 120 up to 11 months back for Electricity and Gas
         and call insert_yeardays() with the values
@@ -260,27 +262,29 @@ class parse_data:
                         break
                     finally:
                         lst.append(rawValues[y])
-                if (rawValues[y] == None):
+                if rawValues[y] is None:
                     lst.pop()
                 strlst = '{}'.format(lst)
-                task = (str(date),int(year),int(monthNo),monthName,strlst)
+                task = (str(date), int(year), int(monthNo), monthName, strlst)
                 self.insert_yeardays(self.conn, task, str(thismonth), self.__table, self.__type)
                 lst.clear()
                 self.counter -= 1
             self.conn.close()
             logger.info("Database connection closed...")
 
+
 def main():
     # check if database exists
     try:
         f = open(Settings.path+Settings.dbname, 'rb')
-    except:
+    except Exception:
         logger.error("database not found")
-        sys.exit(1) # exiting with a non zero value is better for returning from an error
+        sys.exit(1)  # exiting with a non zero value is better for returning from an error
     else:
         f.close()
         parse_data().parse_days()
         parse_data().parse_months()
+
 
 if __name__ == '__main__':
     main()

@@ -1,32 +1,33 @@
-#!/bin/sh
+#!/usr/bin/env python3
 """
     read_live.py
-    
+
     This file reads live data directly from a Youless LS120
 """
-import sys, datetime
+import sys
+import datetime
 
 # web
 import requests
 
 # Youless setup
-from LS120.settings import Youless
+from .settings import Youless
+
+# initialize logging
+import logging
+logger = logging.getLogger(__name__)
+logger.debug("read_live.py started")
 
 # set language
 Youless.youless_locale()
 
-# initialize logging
-import logging
-import LS120.logger_init
-logger = logging.getLogger(__name__)
-logger.debug("read_live.py started")
 
-## Data read with these methods get read live from the youless device and is not store in a database.
+# Data read with these methods get read live from the youless device and is not store in a database.
 class read_live_data:
 
     def __init__(self):
-        self.__headers = Youless.web("HEADERS") # acceptable html headers
-        self.__url = Youless.web("URL") # base url
+        self.__headers = Youless.web("HEADERS")  # acceptable html headers
+        self.__url = Youless.web("URL")  # base url
         self.__ele = Youless.web("ELE")
         self.__gas = Youless.web("GAS")
         self.__json = Youless.web("JSON")
@@ -72,7 +73,7 @@ class read_live_data:
                 if (m >= 60):
                     m -= 60
                     h += 1
-                self.time = '%02d:%02d' % (h,m)# str(self.date.time())[0:5]
+                self.time = '%02d:%02d' % (h, m)  # str(self.date.time())[0:5]
                 self.watt = int(self.api['val'][i])
                 time.append(self.time)
                 watts.append(self.watt)
@@ -98,7 +99,7 @@ class read_live_data:
         data = {}
         time = []
         watts = []
-    
+
         while (self.counter <= self.maxPage):
             self.api = requests.get(self.__url + self.__ele + self.__json + self.__H + str(self.counter)).json()
             self.date = datetime.datetime.strptime(self.api['tm'], '%Y-%m-%dT%H:%M:%S')
@@ -109,7 +110,7 @@ class read_live_data:
                 if (m == 60):
                     h += 1
                     m = 0
-                self.time = '%02d:%02d' % (h,m)# str(self.date.time())[0:5]
+                self.time = '%02d:%02d' % (h, m)  # str(self.date.time())[0:5]
                 self.watt = int(self.api['val'][i])
                 time.append(self.time)
                 watts.append(self.watt)
@@ -120,6 +121,7 @@ class read_live_data:
         data['watts'] = watts
         logger.debug(data)
         return data
+
 
 if __name__ == '__main__':
     sys.exit()
