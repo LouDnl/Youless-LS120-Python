@@ -12,7 +12,7 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 
 # Youless setup
-from .settings import Youless
+from .constants import Youless
 
 # initialize logging
 import logging
@@ -24,6 +24,16 @@ Youless.youless_locale()
 
 
 class web_elements:
+
+    __elements = {
+        "css": {
+            "page_css": {'position': 'fixed', 'top': '0', 'left': '0', 'right': '0', 'bottom': '0', 'overflow': 'auto', 'width': '100%', 'height': '100%'},
+            "row_title": {'text-align': 'center', 'font-size': 'x-large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
+            "subrow_title": {'text-align': 'center', 'font-size': 'large', 'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'},
+            "table_css": {'margin': '0px', 'padding': '0px'},
+            "column_css": {'border': 'none', 'border-collapse': 'collapse', 'margin': '0px', 'padding': '0px'}
+        }
+    }
 
     @staticmethod
     def layout_with_intervals(*args):
@@ -64,7 +74,7 @@ class web_elements:
                 interval=21600*1000,  # 21600 seconds (six hours) in milliseconds
                 n_intervals=0
             )
-        ], style=Youless.web('css', 'page_css'))
+        ], style=web_elements.elements('css', 'page_css'))
 
     @staticmethod
     def table_header(head, id1):
@@ -74,11 +84,11 @@ class web_elements:
         return dbc.Table([
             html.Tr([
                 html.Th(head, colSpan=2, scope="col")
-            ], style=Youless.web('css', 'row_title')),
+            ], style=web_elements.elements('css')['row_title']),
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css')['column_css'])
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css')['column_css'])
             ])
-        ], style=Youless.web('css')['column_css'], borderless=True)
+        ], style=web_elements.elements('css')['column_css'], borderless=True)
 
     @staticmethod
     def table_no_head(id1):
@@ -87,9 +97,9 @@ class web_elements:
         """
         return dbc.Table([
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css')['column_css'])
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css')['column_css'])
             ])
-        ], style=Youless.web('css')['column_css'], borderless=True)
+        ], style=web_elements.elements('css')['column_css'], borderless=True)
 
     @staticmethod
     def dual_table(head, id1, id2):
@@ -99,12 +109,12 @@ class web_elements:
         return dbc.Table([
             html.Tr([
                 html.Th(head, colSpan=2, scope="col")
-            ], style=Youless.web('css', 'row_title')),
+            ], style=web_elements.elements('css')['row_title']),
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id2), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id2), style=web_elements.elements('css', 'column_css'))
             ]),
-        ], style=Youless.web('css', 'table_css'), borderless=True)
+        ], style=web_elements.elements('css')['table_css'], borderless=True)
 
     @staticmethod
     def dual_table_no_head(id1, id2):
@@ -113,10 +123,10 @@ class web_elements:
         """
         return dbc.Table([
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id2), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id2), style=web_elements.elements('css', 'column_css'))
             ]),
-        ], style=Youless.web('css', 'table_css'), borderless=True)
+        ], style=web_elements.elements('css')['table_css'], borderless=True)
 
     @staticmethod
     def quad_table_header(head, id1, id2, id3, id4):
@@ -128,22 +138,22 @@ class web_elements:
         return dbc.Table([
             html.Tr([
                html.Th(head, colSpan=2, scope="col")
-            ], style=Youless.web('css', 'row_title')),
+            ], style=web_elements.elements('css')['row_title']),
             html.Tr([
-               html.Th(Youless.lang('ELE'), colSpan=2, scope="col", style=Youless.web('css', 'subrow_title'))
+               html.Th(Youless.lang('ELE'), colSpan=2, scope="col", style=web_elements.elements('css', 'subrow_title'))
             ]),
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id2), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id2), style=web_elements.elements('css', 'column_css'))
             ]),
             html.Tr([
-               html.Th(Youless.lang('GAS'), colSpan=2, scope="col", style=Youless.web('css', 'subrow_title'))
+               html.Th(Youless.lang('GAS'), colSpan=2, scope="col", style=web_elements.elements('css', 'subrow_title'))
             ]),
             html.Tr([
-                html.Td(dcc.Graph(id=id3), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id4), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id3), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id4), style=web_elements.elements('css', 'column_css'))
             ])
-        ], style=Youless.web('css', 'table_css'), borderless=True)
+        ], style=web_elements.elements('css')['table_css'], borderless=True)
 
     @staticmethod
     def quad_table_no_head(id1, id2, id3, id4):
@@ -153,14 +163,27 @@ class web_elements:
         """
         return dbc.Table([
             html.Tr([
-                html.Td(dcc.Graph(id=id1), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id2), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id2), style=web_elements.elements('css', 'column_css'))
             ]),
             html.Tr([
-                html.Td(dcc.Graph(id=id3), style=Youless.web('css', 'column_css')),
-                html.Td(dcc.Graph(id=id4), style=Youless.web('css', 'column_css'))
+                html.Td(dcc.Graph(id=id3), style=web_elements.elements('css', 'column_css')),
+                html.Td(dcc.Graph(id=id4), style=web_elements.elements('css', 'column_css'))
             ])
-        ], style=Youless.web('css', 'table_css'), borderless=True)
+        ], style=web_elements.elements('css')['table_css'], borderless=True)
+
+    @staticmethod
+    def elements(name, *args):
+        """
+            returns item from elements dictionary, add second argument to return dictionary from key
+            can be used either as web_elements.elements("keyname") and return its contents
+            or as web_elements.elements("keyname", "secondkeyname") and returns the dictionary within the dictionary
+            This will also work: web_elements.elements("keyname")["second_keyname"]["etc"]
+        """
+        if (args == ()):
+            return web_elements.__elements[name]
+        else:
+            return web_elements.__elements[name].get(args[0])  # only the first extra argument will be processed, others will be ignored
 
 
 if __name__ == '__main__':

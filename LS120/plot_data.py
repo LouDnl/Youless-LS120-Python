@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.express as px
 
 # Youless setup
-from .settings import Youless
+from .constants import Youless
 from .read_data import read_data
 
 # initialize logging

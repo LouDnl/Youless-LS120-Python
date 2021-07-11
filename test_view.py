@@ -71,11 +71,11 @@ class graph_test:
             return fig1, fig2, fig3, fig4
 
         # run the webserver
-        app.run_server(debug=Runtime.DASHDEBUG, host=ip, port=port)
+        app.run_server(debug=Settings.DASHDEBUG, host=ip, port=port)
 
 
 def main():
-    if (Runtime.DASHDEBUG):  # if True then run on 127.0.0.1
+    if (Settings.DASHDEBUG):  # if True then run on 127.0.0.1
         ip = Settings.local_ip
     else:  # else run on the defined external IP
         ip = Settings.external_ip

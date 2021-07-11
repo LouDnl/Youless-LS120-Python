@@ -15,7 +15,7 @@ from requests import get
 import sqlite3 as sl
 
 # Youless setup
-from .settings import Runtime, Settings, Youless
+from .constants import Runtime, Settings, Youless
 
 # initialize logging
 import logging

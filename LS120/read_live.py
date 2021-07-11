@@ -11,7 +11,7 @@ import datetime
 import requests
 
 # Youless setup
-from .settings import Youless
+from .constants import Youless
 
 # initialize logging
 import logging

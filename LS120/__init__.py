@@ -2,7 +2,8 @@
 # __init__.py
 
 # import methods from all package files
-from .settings import Settings, Runtime, Youless
+from .settings import Settings
+from .constants import Runtime, Youless
 from .read_data import read_data
 from .plot_data import plot_data
 from .read_live import read_live_data

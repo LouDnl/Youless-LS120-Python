@@ -15,7 +15,8 @@ from dash.dependencies import Input, Output
 
 # Youless setup
 from LS120 import Settings, Runtime, Youless
-from LS120 import web_elements, plot_live, plot_data
+from LS120 import web_elements
+from LS120 import plot_live, plot_data
 import LS120.import_data as db
 
 # initialize logging
@@ -151,11 +152,11 @@ class all_graphs_view:
         #     return json.dumps(fig_json, indent=2)
 
         # run the webserver
-        app.run_server(debug=Runtime.DASHDEBUG, host=ip, port=port)
+        app.run_server(debug=Settings.DASHDEBUG, host=ip, port=port)
 
 
 def main():
-    if (Runtime.DASHDEBUG):  # if True then run on 127.0.0.1
+    if (Settings.DASHDEBUG):  # if True then run on 127.0.0.1
         ip = Settings.local_ip
     else:  # else run on the defined external IP
         ip = Settings.external_ip

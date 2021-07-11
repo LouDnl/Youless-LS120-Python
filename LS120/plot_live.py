@@ -10,7 +10,7 @@ import sys
 import plotly.express as px
 
 # Youless setup
-from .settings import Runtime, Youless
+from .constants import Runtime, Youless
 from .read_live import read_live_data
 
 # initialize logging

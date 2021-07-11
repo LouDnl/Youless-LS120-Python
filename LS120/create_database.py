@@ -10,7 +10,7 @@ import os
 import sqlite3 as sl
 
 # Youless setup
-from .settings import Settings, Youless
+from .constants import Settings, Youless
 
 # initialize logging
 import logging
