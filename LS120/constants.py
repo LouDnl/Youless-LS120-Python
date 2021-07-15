@@ -314,7 +314,7 @@ class Youless:
         """
             returns the locale setting
         """
-        locale.setlocale(locale.LC_ALL, Settings.language)
+        locale.setlocale(locale.LC_ALL, Settings.locale)
 
     @staticmethod
     def lang(text):
