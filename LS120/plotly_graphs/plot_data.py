@@ -14,13 +14,13 @@ import pandas as pd
 import plotly.express as px
 
 # Youless setup
-from .constants import Youless
-from .read_data import read_data
+from LS120.constants import Youless
+from LS120.read_data import read_data
 
 # initialize logging
 import logging
 logger = logging.getLogger(__name__)
-logger.debug("plot_data.py started")
+logger.debug("plot_data loaded")
 
 # set language
 Youless.youless_locale()
@@ -49,9 +49,9 @@ class plot_data:
             plot_hours("E", 2021, 3, 2, 12)
         """
         if (len(args) > 7):
-            return logger.info("Maximum arguments of 7 exceeded")
+            return logger.warning("Maximum arguments of 7 exceeded")
         elif (len(args) < 5):
-            return logger.info("Minimum arguments is 5")
+            return logger.warning("Minimum arguments is 5")
 
         self.etype = args[0]
         self.table = Youless.sql("dbtables")[self.etype][1]
@@ -151,14 +151,14 @@ class plot_data:
             range_y=(0, high),
             title=(Youless.lang('dayhourtitle') % (self.monthName, self.day, self.year, self.columns[1], float(totalWatt/1000), self.columns[2])),
         )
-        logger.info("Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
+        logger.debug("Plotting month %d day %d of year %d from table %s" % (self.month, self.day, self.year, self.table))
         return fig
 
     def plot_month_day(self, year, month, etype):
         """
         Reads from table yeardays_X and returns figure
         plot one month of the year into a graph with daily totals.
-        plot_year_month(2021, 1, 'E') or plot_year_month(2021, January, 'G')
+        plot_month_day(2021, 1, 'E') or plot_month_day(2021, January, 'G')
         year as integer
         month as integer or string
         etype as string ('E' for Electricity, 'G' for Gas)
@@ -194,7 +194,7 @@ class plot_data:
 
             title=(Youless.lang('yearmonthtitle') % (self.monthName, self.year, self.columns[1], totalkWh, self.columns[2])),
         )
-        logger.info("Plotting month %d of year %d" % (self.month, self.year))
+        logger.debug("Plotting month %d of year %d" % (self.month, self.year))
         return fig
 
     def plot_year_day(self, year, etype):
@@ -233,7 +233,7 @@ class plot_data:
             range_y=(0, high),
             title=(Youless.lang('yeardaytitle') % (self.year, self.columns[1], totalkWh, self.columns[2])),
         )
-        logger.info("Plotting year %d" % (self.year))
+        logger.debug("Plotting year %d" % (self.year))
         return fig
 
     def plot_year_month(self, year, etype):
@@ -278,7 +278,7 @@ class plot_data:
                 ticktext=list(months.values())
             )
         )
-        logger.info("Plotting year %d" % (self.year))
+        logger.debug("Plotting year %d" % (self.year))
         return fig
 
 

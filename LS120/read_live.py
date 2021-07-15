@@ -18,9 +18,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.debug("read_live.py started")
 
-# set language
-Youless.youless_locale()
-
 
 # Data read with these methods get read live from the youless device and is not store in a database.
 class read_live_data:

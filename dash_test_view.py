@@ -12,15 +12,18 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
 # Youless setup
-from LS120 import Settings, Runtime, Youless  # all settings
-from LS120 import web_elements  # dash web page elements
-from LS120 import plot_data  # plots data from database
+from LS120 import Runtime, Youless  # all settings
+from LS120.plotly_graphs import plot_data  # plots data from database
 # from LS120 import read_live_data, plot_live  # read and plot live data
+
+# Dash setup
+from dash_settings import Dash_Settings
+from dash_web_elements import web_elements  # dash web page elements
 
 # initialize logging
 import logging
 logger = logging.getLogger(__name__)
-logger.debug("test_view.py started")
+logger.debug("dash_test_view.py started")
 
 # set language
 Youless.youless_locale()
@@ -71,16 +74,17 @@ class graph_test:
             return fig1, fig2, fig3, fig4
 
         # run the webserver
-        app.run_server(debug=Settings.DASHDEBUG, host=ip, port=port)
+        app.run_server(debug=Dash_Settings.DASHDEBUG, host=ip, port=port)
 
 
 def main():
-    if (Settings.DASHDEBUG):  # if True then run on 127.0.0.1
-        ip = Settings.local_ip
+    if (Dash_Settings.DASHDEBUG):  # if True then run on 127.0.0.1
+        ip = Dash_Settings.local_ip
     else:  # else run on the defined external IP
-        ip = Settings.external_ip
+        ip = Dash_Settings.external_ip
 
-    graph_test().create_dash_page(ip, Settings.port)  # go for it
+    logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG}")
+    graph_test().create_dash_page(ip, Dash_Settings.port)  # go for it
 
 
 if __name__ == '__main__':

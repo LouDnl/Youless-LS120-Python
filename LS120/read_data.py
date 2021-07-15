@@ -18,9 +18,6 @@ import logging
 logger = logging.getLogger(__name__)
 logger.debug("read_data.py started")
 
-# set language
-Youless.youless_locale()
-
 
 class read_data:
     """
@@ -35,11 +32,11 @@ class read_data:
         Automatic database connection when called
         """
         self.__db_file = read_data.__path
-        logger.info("Starting database connection...")
+        logger.debug("Starting database connection...")
         self.conn = None
         try:
             self.conn = sl.connect(self.__db_file)
-            logger.info("Connected to: %s" % self.__db_file)
+            logger.debug("Connected to: %s" % self.__db_file)
         except Exception as e:
             logger.error(e)
 
@@ -79,7 +76,7 @@ class read_data:
         else:
             self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, self.year, self.month, self.startday))
             self.lst = [self.year, self.month, self.startday, self.starthour, self.hourlist]
-        logger.info("Starting hour retrieval from table %s" % self.table)
+        logger.debug("Starting hour retrieval from table %s" % self.table)
         self.cur = self.conn.cursor()
         with self.conn:
             data = self.cur.execute(self.query)
@@ -123,7 +120,7 @@ class read_data:
         self.month = month
         self.day = day
         self.table = table
-        logger.info("Starting day retrieval %d %d %d from table %s" % (self.year, self.month, self.day, self.table))
+        logger.debug("Starting day retrieval %d %d %d from table %s" % (self.year, self.month, self.day, self.table))
         self.cur = self.conn.cursor()
         with self.conn:
             self.query = (Youless.sql("queries")["s_dayhours"] % (self.table, str(self.year), str(self.month), str(self.day)))
@@ -158,7 +155,7 @@ class read_data:
         self.year = year
         self.month = month
         self.table = table
-        logger.info("Starting month retrieval %d %d from table %s" % (self.year, self.month, self.table))
+        logger.debug("Starting month retrieval %d %d from table %s" % (self.year, self.month, self.table))
         self.cur = self.conn.cursor()
         with self.conn:
             self.query = (Youless.sql("queries")["s_yeardays"] % (self.table, str(self.year), str(self.month)))
@@ -197,7 +194,7 @@ class read_data:
         if (self.totals != 1 and self.totals != 2):
             logger.error("error: type can only be 1 or 2")
             return "error: type can only be 1 or 2"
-        logger.info("Starting year retrieval %d" % (self.year))
+        logger.debug("Starting year retrieval %d" % (self.year))
         self.cur = self.conn.cursor()
         with self.conn:
             self.query = (Youless.sql("queries")["so_yeardays"] % (self.table, str(self.year)))

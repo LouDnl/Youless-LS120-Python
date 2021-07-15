@@ -7,6 +7,7 @@
     - graphs get updated by a scheduler
     - database gets updated by a scheduler
 """
+import sys
 
 # dash webpage
 import dash
@@ -14,23 +15,25 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
 # Youless setup
-from LS120 import Settings, Runtime, Youless
-from LS120 import web_elements
-from LS120 import plot_live, plot_data
+from LS120 import Runtime, Youless
+from LS120.plotly_graphs import plot_live, plot_data
 import LS120.import_data as db
 
+# Dash setup
+from dash_settings import Dash_Settings, ip_validation
+from dash_web_elements import web_elements  # dash web page elements
+
 # initialize logging
+# from LS120 import logger
 import logging
 logger = logging.getLogger(__name__)
-logger.debug("liveview_allgraphs.py started")
+logger.debug("dash_allgraphs_live.py started")
 
 # set language
 Youless.youless_locale()
 
+# database variable
 update_db = 1
-while(update_db):  # update the database once
-    db.main()  # update database always at start
-    update_db = 0
 
 
 class all_graphs_view:
@@ -41,12 +44,13 @@ class all_graphs_view:
 
         self.elist = Youless.sql('energytypes')['list']  # retrieve energy types
 
-    def create_dash_page(self, ip, port):
+    def create_dash_page(self, ip, port, debug):
         """
         Plot all information with plotly and dash
         """
         self.ip = ip
         self.port = port
+        self.debug = debug
 
         # define the app
         app = dash.Dash(
@@ -152,17 +156,78 @@ class all_graphs_view:
         #     return json.dumps(fig_json, indent=2)
 
         # run the webserver
-        app.run_server(debug=Settings.DASHDEBUG, host=ip, port=port)
+        app.run_server(debug=self.debug, host=self.ip, port=self.port)
 
 
-def main():
-    if (Settings.DASHDEBUG):  # if True then run on 127.0.0.1
-        ip = Settings.local_ip
+def run_default():
+    global update_db
+    while(update_db):  # update the database once
+        db.main()  # update database always at start
+        update_db = 0
+
+    if (Dash_Settings.DASHDEBUG):  # if True then run on 127.0.0.1
+        ip = Dash_Settings.local_ip
     else:  # else run on the defined external IP
-        ip = Settings.external_ip
+        ip = Dash_Settings.external_ip
 
-    all_graphs_view().create_dash_page(ip, Settings.port)  # go for it
+    logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG}")
+    all_graphs_view().create_dash_page(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG)  # go for it
+
+
+def main(**kwargs):
+    global update_db
+    while(update_db):  # update the database once
+        db.main()  # update database always at start
+        update_db = 0
+
+    if "default" in kwargs and kwargs.get("default") is True:  # run with dash_settings.py
+        run_default()
+    else:  # run with provided settings
+        Dash_Settings.DASHDEBUG = kwargs.get("debug")  # overwrite settings with given argument
+        logger.info(f"Starting Dash on {kwargs.get('ip')}:{kwargs.get('port')} with debug: {Dash_Settings.DASHDEBUG}")
+        all_graphs_view().create_dash_page(kwargs.get('ip'), kwargs.get('port'), Dash_Settings.DASHDEBUG)
 
 
 if __name__ == '__main__':
-    main()
+
+    default_usage = """Usage:
+    python dash_allgraphs_live.py default
+    python dash_allgraphs_live.py IP PORT DEBUG
+
+    default = run with dash_settings.py configuration
+    IP = local or external ipv4 address to run on
+    PORT = port to run on
+    DEBUG = True or False for dash debug
+
+    Examples:
+    python dash_allgraphs_live.py default
+    python dash_allgraphs_live.py 127.0.0.1 80 True
+    python dash_allgraphs_live.py 192.168.0.5 8080 False
+    """
+
+    if len(sys.argv) == 1 or len(sys.argv) >= 5:
+        print(default_usage)
+
+    ob = ip_validation()
+
+    while(True):
+        if ob.valid_ip_address(sys.argv[1]) == "IPv4":  # check for valid IPv4 address
+            if int(sys.argv[2]) >= 1 and int(sys.argv[2]) <= 65535:  # check for valid port
+                if sys.argv[3].lower() == "true":  # run if debug is true
+                    main(ip=sys.argv[1], port=sys.argv[2], debug=sys.argv[3].lower().capitalize())
+                    break
+                elif sys.argv[3].lower() == "false":  # run if debug is false
+                    main(ip=sys.argv[1], port=sys.argv[2], debug=sys.argv[3].lower().capitalize())
+                    break
+                else:
+                    print(default_usage)
+                    break
+            else:
+                print(default_usage)
+                break
+        elif ob.valid_ip_address(sys.argv[1]) == "Neither" and sys.argv[1].lower() == "default":  # run default configuration
+            main(default=True)
+            break
+        else:
+            print(default_usage)
+            break

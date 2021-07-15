@@ -56,21 +56,21 @@ def is_table_exists(table):
 
 def main():
     if not isSqlite3Db(path):
-        logger.info("Database {} non existant, creating database".format(Settings.dbname))
+        logger.warning("Database {} non existant, creating database".format(Settings.dbname))
         for v in Youless.sql("dbtables").values():
             for i in v:
                 con = sl.connect(path)
                 with con:
                     con.execute(Youless.sql("queries")[i])
-                    logger.info("Table {} created".format(i))
+                    logger.warning("Table {} created".format(i))
     else:
-        logger.info("Database {} exists, checking and creating tables".format(Settings.dbname))
+        logger.warning("Database {} exists, checking and creating tables".format(Settings.dbname))
         for v in Youless.sql("dbtables").values():
             for i in v:
                 if (is_table_exists(i)):
-                    logger.info("Table {} already exists, doing nothing".format(i))
+                    logger.warning("Table {} already exists, doing nothing".format(i))
                 else:
-                    logger.info("Table {} does not exist, creating".format(i))
+                    logger.warning("Table {} does not exist, creating".format(i))
                     con = sl.connect(path)
                     # CREATE TABLE
                     with con:

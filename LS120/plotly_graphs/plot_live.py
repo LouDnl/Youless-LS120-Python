@@ -10,13 +10,16 @@ import sys
 import plotly.express as px
 
 # Youless setup
-from .constants import Runtime, Youless
-from .read_live import read_live_data
+from LS120.constants import Runtime, Youless
+from LS120.read_live import read_live_data
+
+# Dash setup
+
 
 # initialize logging
 import logging
 logger = logging.getLogger(__name__)
-logger.debug("plot_live.py started")
+logger.debug("plot_live loaded")
 
 # set language
 Youless.youless_locale()
@@ -62,6 +65,7 @@ class plot_live:
                 "y": Youless.lang('W')  # y-axis naming
             }
         )
+        logger.debug("Plotting live %s %s" % (date, time))
         return fig
 
     def plot_live_minutes(self):
@@ -86,6 +90,7 @@ class plot_live:
                 "y": Youless.lang('W')  # y-axis naming
             }
         )
+        logger.debug("Plotting live minutes %s %s" % (date, time))
         return fig
 
     def plot_ten_minutes(self):

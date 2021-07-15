@@ -105,102 +105,6 @@ class Youless:
         "maxTen": 47,  # max entry for w=
     }
 
-    # Languages. Tuple within a dictionary item. 0 == NL, 1 == EN
-    __lang = {
-        "livegraphtitle":
-        (
-            "Live verbruik: {} watt, {} {}uur<br>Meterstand: {} {}",
-            "Live usage: {} watt, {} {} hours<br>Meter: {} {}",
-        ),
-        "liveminutegraphtitle":
-        (
-            "Live verbruik per minuut: {} watt, {} {} uur",
-            "Live usage per minute: {} watt, {} {} hour",
-        ),
-        "tenminutegraphtitle":
-        (
-            "Verbruik per tien minuten:",
-            "Usage per ten minutes:",
-        ),
-        "customhourtitle": (
-            "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
-            "%s %d - %d %d %s per hour, total usage: %g %s",
-        ),
-        "dayhourtitle":
-        (
-            "%s %d %d %s per uur, totaal verbruik: %g %s",
-            "%s %d %d %s per hour, total usage: %g %s",
-        ),
-        "yearmonthtitle":
-        (
-            "%s %d %s per dag, totaal verbruik: %g %s",
-            "%s %d %s per day, total usage: %g %s",
-        ),
-        "yeardaytitle":
-        (
-            "jaar %d %s per dag, totaal verbruik: %g %s",
-            "year %d %s per day, total usage: %g %s",
-        ),
-        "yeartitle":
-        (
-            "jaar %d %s per maand, totaal verbruik: %g %s",
-            "year %d %s per month, total usage: %g %s",
-        ),
-        "ELE":
-        (
-            "Elektriciteit verbruik",
-            "Electricity usage",
-        ),
-        "GAS":
-        (
-            "Gas verbruik",
-            "Gas usage",
-        ),
-        "LIVE":
-        (
-            "Live Informatie Elektriciteit",
-            "Live Electricity Information",
-        ),
-        "TOYE":
-        (
-            "Vandaag en gisteren",
-            "Today and yesterday",
-        ),
-        "CMLM":
-        (
-            "Deze maand en vorige maand",
-            "This month and last month",
-        ),
-        "TYLYM":
-        (
-            "Dit jaar en vorig jaar in maanden",
-            "This year and last year in months",
-        ),
-        "TYLYD":
-        (
-            "Dit jaar en vorig jaar in dagen",
-            "This year and last year in days",
-        ),
-        "TOD": ("Vandaag", "Today"),
-        "YDY": ("Gisteren", "Yesterday"),
-        "TMO": ("Deze maand", "This month"),
-        "LMO": ("Vorige maand", "Last month"),
-        "TYE": ("Dit jaar", "This year"),
-        "LYE": ("Vorig jaar", "Last year"),
-        "D": ("Dag", "Day",),
-        "DT": ("Datum", "Date",),
-        "M": ("maand", "month"),
-        "T": ("Tijd", "Time"),
-        "U": ("Uur", "Hour"),
-        "KH": ("kiloWatt uur", "kiloWatt hour"),
-        "KWH": ("kWh", "kWh"),
-        "W": ("Watt", "Watts"),
-        "WH": ("Watt uur", "Watts hour"),
-        "KM": ("Kubieke Meter", "Cubic meters"),
-        "M3": ("m3", "m3"),
-        "L": ("Liter", "Liter"),
-    }
-
     # SQL dictionary
     __sql = {
         "valuenaming": ('kWh', 'm3', 'watt', 'ltr'),  # Tuple with fixed value naming 0, 1, 2, 3
@@ -309,12 +213,108 @@ class Youless:
         }
     }
 
+    # Languages. Tuple within a dictionary item. 0 == NL, 1 == EN
+    __lang = {
+        "livegraphtitle":
+        (
+            "Live verbruik: {} watt, {} {}uur<br>Meterstand: {} {}",
+            "Live usage: {} watt, {} {} hours<br>Meter: {} {}",
+        ),
+        "liveminutegraphtitle":
+        (
+            "Live verbruik per minuut: {} watt, {} {} uur",
+            "Live usage per minute: {} watt, {} {} hour",
+        ),
+        "tenminutegraphtitle":
+        (
+            "Verbruik per tien minuten:",
+            "Usage per ten minutes:",
+        ),
+        "customhourtitle": (
+            "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
+            "%s %d - %d %d %s per hour, total usage: %g %s",
+        ),
+        "dayhourtitle":
+        (
+            "%s %d %d %s per uur, totaal verbruik: %g %s",
+            "%s %d %d %s per hour, total usage: %g %s",
+        ),
+        "yearmonthtitle":
+        (
+            "%s %d %s per dag, totaal verbruik: %g %s",
+            "%s %d %s per day, total usage: %g %s",
+        ),
+        "yeardaytitle":
+        (
+            "jaar %d %s per dag, totaal verbruik: %g %s",
+            "year %d %s per day, total usage: %g %s",
+        ),
+        "yeartitle":
+        (
+            "jaar %d %s per maand, totaal verbruik: %g %s",
+            "year %d %s per month, total usage: %g %s",
+        ),
+        "ELE":
+        (
+            "Elektriciteit verbruik",
+            "Electricity usage",
+        ),
+        "GAS":
+        (
+            "Gas verbruik",
+            "Gas usage",
+        ),
+        "LIVE":
+        (
+            "Live Informatie Elektriciteit",
+            "Live Electricity Information",
+        ),
+        "TOYE":
+        (
+            "Vandaag en gisteren",
+            "Today and yesterday",
+        ),
+        "CMLM":
+        (
+            "Deze maand en vorige maand",
+            "This month and last month",
+        ),
+        "TYLYM":
+        (
+            "Dit jaar en vorig jaar in maanden",
+            "This year and last year in months",
+        ),
+        "TYLYD":
+        (
+            "Dit jaar en vorig jaar in dagen",
+            "This year and last year in days",
+        ),
+        "TOD": ("Vandaag", "Today"),
+        "YDY": ("Gisteren", "Yesterday"),
+        "TMO": ("Deze maand", "This month"),
+        "LMO": ("Vorige maand", "Last month"),
+        "TYE": ("Dit jaar", "This year"),
+        "LYE": ("Vorig jaar", "Last year"),
+        "D": ("Dag", "Day",),
+        "DT": ("Datum", "Date",),
+        "M": ("maand", "month"),
+        "T": ("Tijd", "Time"),
+        "U": ("Uur", "Hour"),
+        "KH": ("kiloWatt uur", "kiloWatt hour"),
+        "KWH": ("kWh", "kWh"),
+        "W": ("Watt", "Watts"),
+        "WH": ("Watt uur", "Watts hour"),
+        "KM": ("Kubieke Meter", "Cubic meters"),
+        "M3": ("m3", "m3"),
+        "L": ("Liter", "Liter"),
+    }
+
     @staticmethod
     def youless_locale():
         """
             returns the locale setting
         """
-        locale.setlocale(locale.LC_ALL, Youless.web("LOCALE"))
+        locale.setlocale(locale.LC_ALL, Settings.language)
 
     @staticmethod
     def lang(text):

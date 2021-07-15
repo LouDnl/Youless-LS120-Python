@@ -2,24 +2,23 @@
 # __init__.py
 
 # import methods from all package files
+# from .logger import logger
 from .settings import Settings
 from .constants import Runtime, Youless
 from .read_data import read_data
-from .plot_data import plot_data
 from .read_live import read_live_data
-from .plot_live import plot_live
-from .web_elements import web_elements
 # note: create_database and import_data are run outside of any predefined code.
 # example:
 # python -m LS120.create_database
 # python -m LS120.import_data
 
 # initialize logging
+import sys
 import os
 import yaml
 import logging
 import logging.config
-filename = 'logger_config.yaml'
+filename = 'ls120_logger_config.yaml'
 
 path = os.path.dirname(os.path.realpath(__file__)) + '/'  # path is the full path of where ever this file resides
 
@@ -29,10 +28,9 @@ with open(path + filename, 'r') as f:
         # load config file
         logger_config = yaml.safe_load(f.read())
         logging.config.dictConfig(logger_config)
+        logger = logging.getLogger(__name__)
+        logger.debug("__init__.py loaded")
     except yaml.YAMLError as e:
-        print("Error, could not open logger config")
+        print("Error, could not open logger config.\nUnable to start.")
         print(e)
-        pass
-
-logger = logging.getLogger(__name__)
-logger.debug("__init__.py loaded")
+        sys.exit()

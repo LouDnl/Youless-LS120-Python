@@ -100,18 +100,18 @@ class parse_data:
                 existingKey = None
 
         if (existingKey is not None) and (differences == 0):  # check if the primary key exists and list has 24 hour values
-            logger.info("Primary key %s exists, has %i entries and %i differences, skipping!" % (self.date, lenX, differences))
+            logger.debug("Primary key %s exists, has %i entries and %i differences, skipping!" % (self.date, lenX, differences))
             return
         else:
             try:
-                logger.info("Primarykey %s has %i entries and/or %i differences. Overwriting and appending data!" % (self.date, lenX, differences))
+                logger.debug("Primarykey %s has %i entries and/or %i differences. Overwriting and appending data!" % (self.date, lenX, differences))
             except Exception:
-                logger.info("existingKey variable was not created, assigning None")
+                logger.debug("existingKey variable was not created, assigning None")
         try:
             cur.execute((self.sql % (self.table, self.type)), insertion)
-            logger.info("Updating the database with: {}".format(insertion))
+            logger.debug("Updating the database with: {}".format(insertion))
         except Exception as E:
-            logger.info("An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
+            logger.error("An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
             pass
         conn.commit()
         return cur.lastrowid
@@ -156,23 +156,23 @@ class parse_data:
         except Exception:
             logger.debug("no existing Primary Key for {}".format(insertion[0]))
             if ('existingKey' not in locals()):
-                logger.info("existingKey variable was not created, assigning None")
+                logger.debug("existingKey variable was not created, assigning None")
                 existingKey = None
 
         if (existingKey is not None) and (differences == 0):
-            logger.info("Primary key %s exists and has %i differences, skipping!" % (insertion[0], differences))
+            logger.debug("Primary key %s exists and has %i differences, skipping!" % (insertion[0], differences))
             return
         else:
             try:
-                logger.info("Primary key is %s and has %i differences. Overwriting and appending data!" % (insertion[0], differences))
+                logger.debug("Primary key is %s and has %i differences. Overwriting and appending data!" % (insertion[0], differences))
             except Exception:
-                logger.info("Primarykey did not exist. Creating new entry")
+                logger.debug("Primarykey did not exist. Creating new entry")
 
         try:
             cur.execute((self.sql % (self.table, self.type)), insertion)
             logger.debug("Updating the database with: {}".format(insertion))
         except Exception as E:
-            logger.info("An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
+            logger.error("An error occured, skipping the update.\n Error: {}\n sql: {}".format(E, insertion))
             pass
         conn.commit()
         return cur.lastrowid
@@ -191,7 +191,7 @@ class parse_data:
             self.minHour = Youless.web("minHour")
             self.counter = self.maxPage
             self.conn = self.create_connection(Settings.path+Settings.dbname)
-            logger.info("Connected to table {}".format(self.__table))
+            logger.debug("Connected to table {}".format(self.__table))
             while (self.counter >= self.minPage):
                 self.api = get(self.__url + self.__urltype + self.__json + self.__day + str(self.counter))
                 readapi = self.api.json()
@@ -224,7 +224,7 @@ class parse_data:
                 lst.clear()
                 self.counter -= 1
             self.conn.close()
-            logger.info("Database connection closed...")
+            logger.debug("Database connection closed...")
 
     def parse_months(self):
         """
@@ -240,7 +240,7 @@ class parse_data:
             self.minPage = Youless.web("minMonthPage")
             self.counter = self.maxPage
             self.conn = self.create_connection(Settings.path+Settings.dbname)
-            logger.info("Connected to table {}".format(self.__table))
+            logger.debug("Connected to table {}".format(self.__table))
             while (self.counter >= self.minPage):
                 self.api = get(self.__url + self.__urltype + self.__json + self.__month + str(self.counter))
                 readapi = self.api.json()
@@ -270,7 +270,7 @@ class parse_data:
                 lst.clear()
                 self.counter -= 1
             self.conn.close()
-            logger.info("Database connection closed...")
+            logger.debug("Database connection closed...")
 
 
 def main():

@@ -12,7 +12,7 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 
 # Youless setup
-from .constants import Youless
+from LS120.constants import Youless
 
 # initialize logging
 import logging
