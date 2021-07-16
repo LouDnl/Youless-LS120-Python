@@ -15,7 +15,7 @@ from requests import get
 import sqlite3 as sl
 
 # Youless setup
-from .constants import Runtime, Settings, Youless
+from .constants import Settings, Youless
 
 # initialize logging
 import logging
@@ -29,7 +29,7 @@ sys.stdout.reconfigure(encoding=Youless.web("ENCODING"))  # set encoding
 
 class parse_data:
     """
-        class to import data from youless into sqlite database.
+        class to retrieve data from youless, parse it into data and import it into an sqlite3 database.
     """
 
     def __init__(self):
@@ -48,7 +48,7 @@ class parse_data:
 
     def create_connection(self, db_file):
         """
-        Function to create a connection to the database
+            Internal function to create a connection to the database
         """
         self.conn = None
         try:
@@ -60,12 +60,12 @@ class parse_data:
 
     def insert_dayhours(self, conn, insertion, table, type):
         """
-        Function to store values in sqlite3 database in the following format (all strings):
-        date, year, week, month, monthname, day, yearday, values per hour
-        example:
-        ('2021-04-03', 2021, 13, 4, 'April', 3, 93, '[428.0, 385.0, 400.0, 391.0, 386.0, 398.0, 403.0, 485.0, 759.0, 611.0, 650.0, 1225.0, 626.0, 940.0, 534.0, 630.0, 751.0, 630.0, 1194.0, 951.0, 934.0, 893.0, 628.0, 581.0]')
-        INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
-        INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
+            Internal function to store values in sqlite3 database in the following format (all strings):
+            date, year, week, month, monthname, day, yearday, values per hour
+            example:
+            ('2021-04-03', 2021, 13, 4, 'April', 3, 93, '[428.0, 385.0, 400.0, 391.0, 386.0, 398.0, 403.0, 485.0, 759.0, 611.0, 650.0, 1225.0, 626.0, 940.0, 534.0, 630.0, 751.0, 630.0, 1194.0, 951.0, 934.0, 893.0, 628.0, 581.0]')
+            INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
+            INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
 
         self.table = table
@@ -116,16 +116,16 @@ class parse_data:
         conn.commit()
         return cur.lastrowid
 
-    def insert_yeardays(self, conn, insertion, thismonth, table, type):
+    def insert_yeardays(self, conn, insertion, table, type):
         """
-        Function to store values in sqlite3 database in the following format (all strings):
-        date, year, month, monthname, values per day
-        example return:
-        ('2020-12-01', 2020, 12, 'December',
-        '[18.85, 15.12, 19.72, 13.76, 13.93, 20.7, 17.66, 18.57, 14.14, 13.23, 12.72, 15.38, 16.89, 16.06,
-        15.39, 22.16, 15.0, 15.34, 12.61, 17.17, 18.85, 15.25, 20.22, 13.51, 15.35, 13.49, 12.99, 21.87, 14.2, 16.7, 15.45]')
-        INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
-        INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
+            Internal function to store values in sqlite3 database in the following format (all strings):
+            date, year, month, monthname, values per day
+            example return:
+            ('2020-12-01', 2020, 12, 'December',
+            '[18.85, 15.12, 19.72, 13.76, 13.93, 20.7, 17.66, 18.57, 14.14, 13.23, 12.72, 15.38, 16.89, 16.06,
+            15.39, 22.16, 15.0, 15.34, 12.61, 17.17, 18.85, 15.25, 20.22, 13.51, 15.35, 13.49, 12.99, 21.87, 14.2, 16.7, 15.45]')
+            INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
+            INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
         """
         self.table = table
         self.type = type
@@ -177,100 +177,133 @@ class parse_data:
         conn.commit()
         return cur.lastrowid
 
-    def parse_days(self):
+    def parse_days(self, etype, data):
         """
-        Function to retrieve daily Electricity and Gas hour value from Youless 120 with a maximum history of 70 days back
-        """
-        for x in Youless.sql("dbtables"):
-            self.__table = Youless.sql("dbtables")[x][1]
-            self.__urltype = self.__ele if x == 'E' and x != ('G', 'S') else self.__gas if x == 'G' else self.__snul
-            self.__type = self.__watt if x == 'E' and x != 'G' else self.__ltr
-            self.maxPage = Youless.web("maxDayPage")
-            self.minPage = Youless.web("minDayPage")
-            self.maxHour = Youless.web("maxHour")
-            self.minHour = Youless.web("minHour")
-            self.counter = self.maxPage
-            self.conn = self.create_connection(Settings.path+Settings.dbname)
-            logger.debug("Connected to table {}".format(self.__table))
-            while (self.counter >= self.minPage):
-                self.api = get(self.__url + self.__urltype + self.__json + self.__day + str(self.counter))
-                readapi = self.api.json()
-                jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
-                date = jsonDate.date()
-                year = jsonDate.date().strftime('%Y')
-                weekNo = jsonDate.date().strftime('%W')
-                monthNo = jsonDate.date().strftime('%m')
-                monthName = jsonDate.date().strftime('%B')
-                monthDay = jsonDate.date().strftime('%d')
-                yearDay = jsonDate.date().strftime('%j')
-                rawValues = readapi['val']
-                lst = []
-                self.hours = self.minHour
-                for y, s in enumerate(rawValues):
-                    try:
-                        rawValues[y] = s.strip()
-                        rawValues[y] = float(s.replace(',', '.'))
-                    except AttributeError:
-                        pass
-                    except IndexError:
-                        break
-                    finally:
-                        lst.append(rawValues[y])
-                if rawValues[y] is None:
-                    lst.pop()
-                strlst = '{}'.format(lst)
-                task = (str(date), int(year), int(weekNo), int(monthNo), monthName, int(monthDay), int(yearDay), strlst)
-                self.insert_dayhours(self.conn, task, self.__table, self.__type)
-                lst.clear()
-                self.counter -= 1
-            self.conn.close()
-            logger.debug("Database connection closed...")
+            Function to parse the information retrieved by retrieve_days
 
-    def parse_months(self):
+            :parse_days(etype, data)
+            :etype is 'E' or 'G' for Electricity or Gas
+            :data is a list with tuples retrieved by retrieve_days
         """
-        Function to retrieve days per month from Youless 120 up to 11 months back for Electricity and Gas
-        and call insert_yeardays() with the values
+        self.__table = Youless.sql("dbtables")[etype][1]
+        self.__type = self.__watt if etype == 'E' and etype != 'G' else self.__ltr
+        self.conn = self.create_connection(Settings.path+Settings.dbname)
+        logger.debug("Connected to table {}".format(self.__table))
+        for item in data:
+            self.insert_dayhours(self.conn, item, self.__table, self.__type)
+        self.conn.close()
+        logger.debug("Database connection closed...")
+
+    def parse_months(self, etype, data):
+        """
+            Function to parse the information retrieved by retrieve_months
+
+            :parse_months(etype, data)
+            :etype is 'E' or 'G' for Electricity or Gas
+            :data is a list with tuples retrieved by retrieve_months
+        """
+        self.__table = Youless.sql("dbtables")[etype][0]
+        self.__type = self.__kwh if etype == 'E' and etype != 'G' else self.__m3
+        self.conn = self.create_connection(Settings.path+Settings.dbname)
+        logger.debug("Connected to table {}".format(self.__table))
+        for item in data:
+            self.insert_yeardays(self.conn, item, self.__table, self.__type)
+        self.conn.close()
+        logger.debug("Database connection closed...")
+
+    def retrieve_days(self, etype):
+        """
+            Function to retrieve all Electricity and Gas hour values from Youless 120
+            with a maximum history of 70 days back (youless max).
+            returns a list with tuples of data.
+
+            :retrieve_days(etype)
+            :etype is 'E' or 'G' for Electricity or Gas
+        """
+        self.__urltype = self.__ele if etype == 'E' and etype != ('G', 'S') else self.__gas if etype == 'G' else self.__snul
+        self.max_page = Youless.web("maxDayPage")
+        self.min_page = Youless.web("minDayPage")
+        self.max_hour = Youless.web("maxHour")
+        self.min_hour = Youless.web("minHour")
+        self.counter = self.max_page
+        self.return_list = []
+        while (self.counter >= self.min_page):
+            self.api = get(self.__url + self.__urltype + self.__json + self.__day + str(self.counter))
+            readapi = self.api.json()
+            json_date = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
+            date = json_date.date()
+            year = json_date.date().strftime('%Y')
+            week_no = json_date.date().strftime('%W')
+            month_no = json_date.date().strftime('%m')
+            month_name = json_date.date().strftime('%B')
+            month_day = json_date.date().strftime('%d')
+            year_day = json_date.date().strftime('%j')
+            raw_values = readapi['val']
+            lst = []
+            self.hours = self.min_hour
+            for y, s in enumerate(raw_values):
+                try:
+                    raw_values[y] = s.strip()
+                    raw_values[y] = float(s.replace(',', '.'))
+                except AttributeError:
+                    pass
+                except IndexError:
+                    break
+                finally:
+                    lst.append(raw_values[y])
+            if raw_values[y] is None:
+                lst.pop()
+            strlst = '{}'.format(lst)
+            task = (str(date), int(year), int(week_no), int(month_no), month_name, int(month_day), int(year_day), strlst)
+            self.return_list.append(task)
+            lst.clear()
+            self.counter -= 1
+        return self.return_list
+
+    def retrieve_months(self, etype):
+        """
+            Function to retrieve days per month from Youless 120
+            up to 11 months back for Electricity and Gas.
+            returns a list with tuples of data.
+
+            :retrieve_months(etype)
+            :etype is 'E' or 'G' for Electricity or Gas
         """
 
-        for x in Youless.sql("dbtables"):
-            self.__table = Youless.sql("dbtables")[x][0]
-            self.__urltype = self.__ele if x == 'E' and x != ('G', 'S') else self.__gas if x == 'G' else self.__snul
-            self.__type = self.__kwh if x == 'E' and x != 'G' else self.__m3
-            self.maxPage = Youless.web("maxMonthPage")
-            self.minPage = Youless.web("minMonthPage")
-            self.counter = self.maxPage
-            self.conn = self.create_connection(Settings.path+Settings.dbname)
-            logger.debug("Connected to table {}".format(self.__table))
-            while (self.counter >= self.minPage):
-                self.api = get(self.__url + self.__urltype + self.__json + self.__month + str(self.counter))
-                readapi = self.api.json()
-                jsonDate = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
-                date = jsonDate.date()
-                year = jsonDate.date().strftime('%Y')
-                monthNo = jsonDate.date().strftime('%m')
-                monthName = jsonDate.date().strftime('%B')
-                thismonth = Runtime.td('dt').strftime('%Y-%m-01')
-                rawValues = readapi['val']
-                lst = []
-                for y, s in enumerate(rawValues):
-                    try:
-                        rawValues[y] = s.strip()
-                        rawValues[y] = float(s.replace(',', '.'))
-                    except AttributeError:
-                        pass
-                    except IndexError:
-                        break
-                    finally:
-                        lst.append(rawValues[y])
-                if rawValues[y] is None:
-                    lst.pop()
-                strlst = '{}'.format(lst)
-                task = (str(date), int(year), int(monthNo), monthName, strlst)
-                self.insert_yeardays(self.conn, task, str(thismonth), self.__table, self.__type)
-                lst.clear()
-                self.counter -= 1
-            self.conn.close()
-            logger.debug("Database connection closed...")
+        self.__urltype = self.__ele if etype == 'E' and etype != ('G', 'S') else self.__gas if etype == 'G' else self.__snul
+        self.__type = self.__kwh if etype == 'E' and etype != 'G' else self.__m3
+        self.max_page = Youless.web("maxMonthPage")
+        self.min_page = Youless.web("minMonthPage")
+        self.counter = self.max_page
+        self.return_list = []
+        while (self.counter >= self.min_page):
+            self.api = get(self.__url + self.__urltype + self.__json + self.__month + str(self.counter))
+            readapi = self.api.json()
+            json_date = datetime.datetime.strptime(readapi['tm'], '%Y-%m-%dT%H:%M:%S')
+            date = json_date.date()
+            year = json_date.date().strftime('%Y')
+            month_no = json_date.date().strftime('%m')
+            month_name = json_date.date().strftime('%B')
+            raw_values = readapi['val']
+            lst = []
+            for y, s in enumerate(raw_values):
+                try:
+                    raw_values[y] = s.strip()
+                    raw_values[y] = float(s.replace(',', '.'))
+                except AttributeError:
+                    pass
+                except IndexError:
+                    break
+                finally:
+                    lst.append(raw_values[y])
+            if raw_values[y] is None:
+                lst.pop()
+            strlst = '{}'.format(lst)
+            task = (str(date), int(year), int(month_no), month_name, strlst)
+            self.return_list.append(task)
+            lst.clear()
+            self.counter -= 1
+        return self.return_list
 
 
 def main():
@@ -282,8 +315,9 @@ def main():
         sys.exit(1)  # exiting with a non zero value is better for returning from an error
     else:
         f.close()
-        parse_data().parse_days()
-        parse_data().parse_months()
+        for type in Youless.sql("dbtables").keys():
+            parse_data().parse_days(type, parse_data().retrieve_days(type))
+            parse_data().parse_months(type, parse_data().retrieve_months(type))
 
 
 if __name__ == '__main__':

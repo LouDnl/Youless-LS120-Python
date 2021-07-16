@@ -34,6 +34,9 @@ Youless.youless_locale()
 
 # database variable
 update_db = 1
+while(update_db):  # update the database
+    db.main()  # update database always once on loading the file
+    update_db = 0
 
 
 class all_graphs_view:
@@ -160,11 +163,6 @@ class all_graphs_view:
 
 
 def run_default():
-    global update_db
-    while(update_db):  # update the database once
-        db.main()  # update database always at start
-        update_db = 0
-
     if (Dash_Settings.DASHDEBUG):  # if True then run on 127.0.0.1
         ip = Dash_Settings.local_ip
     else:  # else run on the defined external IP
@@ -175,11 +173,6 @@ def run_default():
 
 
 def main(**kwargs):
-    global update_db
-    while(update_db):  # update the database once
-        db.main()  # update database always at start
-        update_db = 0
-
     if "default" in kwargs and kwargs.get("default") is True:  # run with dash_settings.py
         run_default()
     else:  # run with provided settings
