@@ -254,6 +254,7 @@ available functions are:
 	- ~~`plot_live().plot_ten_minutes()`~~ This function does not yet work
 
 ## To Do:
+- Convert read database data to Pandas DataFrame directly
 - Create interactive Dash website with:
 	- Separate webpage from plot script
 	- Automatic view of available data
@@ -261,8 +262,7 @@ available functions are:
 	- Custom graphs based on available data. e.g. average electricity usage on wednesdays
 - Add quick tutorial to create a linux service that always runs
 	- Examples available in docs/startupscript.txt (No explanation yet)
-- Split import_data into read and return and write to database
-- Convert read database data to Pandas DataFrame directly
+- ~~Split import_data into read and return and write to database~~
 - ~~Add explanatory usage per package file method~~
 - ~~Add extra notations for more clarity~~
 - ~~Remove commented out code~~
