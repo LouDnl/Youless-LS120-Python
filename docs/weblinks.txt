@@ -1,12 +1,26 @@
 http://192.168.0.40/
 
-/a?f=j # live stats
+/n # netwerk configuratie
+/m # eletriciteitsmeter
+/u # upload
+/s # systeem
+
+/v # elektriciteit
+/w # gas
+/z # s0 bus
+
+?f=j& # add to url to enable json
+
+/a?f=j # live stats in json
+/a?f # live stats in text
 
 /a? # main stats - pwr = live current usage
-/V? # url year, week, day, hour
-/W? # url year, week, day
-f=j& # enable json
-m= # url represented in months, history goes to next month
-d= # url represented in weeks, history goes to next week
-w=  # url represented in 3 parts, shows only one day 24hrs back up to current hour
-h= # url represented in 20 parts of one hour counting back from the current moment
+
+/V? # electricity url year, week, day, hour
+/W? # gas url year, week, day, hour
+/Z? # s0 url year, week, day, hour
+
+m= # history presented in months (1 - 12). where 1 is january and 12 is december with 12 month history (including current up to current day).
+d= # history presented in days (1 - 70). where 1 is today and 70 is 69 days back.
+w=  # history presented in 48 values per page with 10 minute intervals (1 - 30). where page 1 is up to now and 30 is max 10 days history. page one gets updated continously and pushes history back.
+h= # history presented in 30 values per page with 1 minute intervals (1 - 20). where page 1 is up to now and 20 is max 10 hours history. page one gets updated continously and pushes history back.

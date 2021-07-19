@@ -44,7 +44,6 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 - Or use any of the package funtions in your own code. Every function \
 	has it's own description, go check them out :)
 
-
 ## Example files:
 - dash_allgraphs_live.py starts a flask webserver that displays all available graphs
 	- updates the database on start and while active
@@ -253,6 +252,9 @@ available functions are:
 		returns plotly figure with live usage including history until 10 hours back. 
 	- ~~`plot_live().plot_ten_minutes()`~~ This function does not yet work
 
+## Run as service on linux
+- Instructions in [Systemd service on linux](docs/startupscript.md "Linux service instructions")
+
 ## To Do:
 - Convert read database data to Pandas DataFrame directly
 - Create interactive Dash website with:
@@ -260,8 +262,8 @@ available functions are:
 	- Automatic view of available data
 	- Buttons that click to available data
 	- Custom graphs based on available data. e.g. average electricity usage on wednesdays
-- Add quick tutorial to create a linux service that always runs
-	- Examples available in docs/startupscript.txt (No explanation yet)
+- ~~Add quick tutorial to create a linux service that always runs~~
+	- ~~Examples available in docs/startupscript.txt (No explanation yet)~~
 - ~~Split import_data into read and return and write to database~~
 - ~~Add explanatory usage per package file method~~
 - ~~Add extra notations for more clarity~~
