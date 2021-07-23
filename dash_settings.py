@@ -13,7 +13,8 @@ logger.debug("dash_settings.py loaded")
 
 class Dash_Settings:
 
-    DASHDEBUG = True  # enable/disable serving of dash webservices on local_ip
+    DASHDEBUG = False  # enable/disable serving of dash webservices on local_ip
+    RELOADER = False  # enable/disable the use_reloader feature of dash when editing files (always True if debug is True)
 
     local_ip = '127.0.0.1'  # static home ip for testing the webpage. default ip if DASHDEBUG == True
     external_ip = '192.168.0.5'  # external webpage ip when hosting

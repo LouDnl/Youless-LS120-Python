@@ -119,6 +119,10 @@ class Youless:
             "G": ('yeardays_g', 'dayhours_g')  # tuple 0, 1, 3 #, 'dayminutes_g'),
             # "S": ('yeardays_s', 'dayhours_s'),  # tuple 0, 1
         },
+        "av_select": {  # select yearday watt or liter for average calculation from dayhours_X
+            "E": 'yearday,watt',
+            "G": 'yearday,ltr'
+        },
         "queries": {  # All used SQL queries
             "yeardays_e":
             """
@@ -209,7 +213,19 @@ class Youless:
             "so_yeardays":
             """
                 SELECT * FROM %s WHERE year = %s ORDER BY date
+            """,
+            "select_one":
             """
+                SELECT %s FROM %s WHERE %s IS %s
+            """,
+            "select_one_and":
+            """
+                SELECT %s FROM %s WHERE %s IS %s AND %s = %s
+            """,
+            "if_exists":  # test reformat of query style for better reading
+            """
+                SELECT EXISTS(SELECT 1 FROM {} WHERE {} = {})
+            """,
         }
     }
 
@@ -330,13 +346,13 @@ class Youless:
             return Youless.__lang[text][1]
 
     @staticmethod
-    def sql(name):  # return items from config dictionary
+    def sql(name):  # return items from sql dictionary
         """
-            returns item from the conf dictionary
+            returns item from the sql dictionary
             usage:
-            Youless.conf("keyname") returns contents of the key
+            Youless.sql("keyname") returns contents of the key
             For nested dictionaries use as followed:
-            Youless.conf("keyname")["2nd_keyname"]["etc"]
+            Youless.sql("keyname")["2nd_keyname"]["etc"]
         """
         return Youless.__sql[name]
 

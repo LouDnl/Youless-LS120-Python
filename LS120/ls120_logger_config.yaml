@@ -5,6 +5,8 @@ disable_existing_loggers: false
 
 formatters:
     standard:
+        format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    extensive:
         format: '%(asctime)s - %(filename)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
 
 handlers:
@@ -13,23 +15,22 @@ handlers:
         level: DEBUG
         formatter: standard
         stream: ext://sys.stdout
+
     debug_file_handler:
         class: logging.handlers.RotatingFileHandler
         level: DEBUG
-        formatter: standard
+        formatter: extensive
         filename: ls120.log
         maxBytes: 10485760 # 10MB
         backupCount: 20
         encoding: utf8
 
 root:
-    level: INFO
+    level: DEBUG
     handlers: [console, debug_file_handler]
     propogate: yes
 
 # loggers:
-#     code_test:
+#     ls120:
 #         level: DEBUG
 #         handlers: [console, debug_file_handler]
-#         propagate: no
-

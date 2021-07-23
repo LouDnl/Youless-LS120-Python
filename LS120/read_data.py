@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-    retrieve_data.py
+    read_data.py
 
     This file reads data from youless sqlite3 database and returns it as a list
 """
@@ -9,6 +9,7 @@ import ast  # for converting string representation of a list to a list
 
 # sqlite
 import sqlite3 as sl
+from sqlite3.dbapi2 import OperationalError
 
 # Youless setup
 from .constants import Settings, Youless
@@ -35,10 +36,11 @@ class read_data:
         logger.debug("Starting database connection...")
         self.conn = None
         try:
-            self.conn = sl.connect(self.__db_file)
+            self.conn = sl.connect(f'file:{self.__db_file}?mode=ro', uri=True)  # try to open the database file in read only mode
             logger.debug("Connected to: %s" % self.__db_file)
-        except Exception as e:
+        except OperationalError as e:  # raise exception if file is not found
             logger.error(e)
+            logger.error("file not found %s" % self.__db_file)
 
     def retrieve_hours(self, table, year, month, startday, starthour, *args):
         """

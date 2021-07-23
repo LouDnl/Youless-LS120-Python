@@ -245,12 +245,69 @@ available functions are:
 		```
 - `LS120/plotly_graphs/plot_live.py` converts lists with live data and returns plotly figures
 available functions are:
-	- `plot_live().plot_live()` \
-		returns plotly figure with current live information read directly from the Youless. \
+	- `plot_live().plot_live()`
+		```
+		returns plotly figure with current live information read directly from the Youless.
 		starts with current usage and doesnt have history.
-	- `plot_live().plot_minutes()` \
-		returns plotly figure with live usage including history until 10 hours back. 
+		```
+	- `plot_live().plot_minutes()` 
+		```
+		returns plotly figure with live usage including history until 10 hours back.
+		```
 	- ~~`plot_live().plot_ten_minutes()`~~ This function does not yet work
+- `LS120/read_custom_data.py` read and return custom items from the dayhours_x tables
+available functions are:
+	- `read_custom_data().db_connect()`
+		```
+		function to test if database exists and then connect to it. 
+		returns None if database does not exist.
+		```
+	- `read_custom_data().check_existence()` 
+		```
+		function to check if item exists in sqlite database. 
+		returns 1 if row exists and 0 if not. 
+		:table= str 
+		:column= str
+		:item= str/int (int gets transformed to str in process)
+		```
+	- `read_custom_data().get_item()`
+		```
+		returns 1 item from database corresponding to the given query and kwargs
+		```
+	- `read_custom_data().get_yeardays()`
+		```
+		return list of all occuring day numbers (zero padded).
+			given a weekday in a date period
+			given a date period
+		Examples:
+			get_yeardays(start=datetime(2021,1,1), end=datetime(2021,12,31), day='wednesday')
+			get_yeardays(start=datetime(2021,3,1), end=datetime(2021,3,31))
+		:start= datetime(year,month,day)
+		:end= datetime(year,month,day)
+		:day= str e.g. 'monday'
+		```
+	- `read_custom_data().get_date_range_from_week()`
+		```
+		source: http://mvsourcecode.com/python-how-to-get-date-range-from-week-number-mvsourcecode/
+		return start and enddate fomr given weeknumber in given year.
+		example:
+			get_date_range_from_week(year=2020,week=24)
+		:year= int
+		:week= int
+		```	
+	- `read_custom_data().get_average()`
+		```
+		return average for:
+			specified weekday in a year,
+			specified week in a year,
+			specified month in a year,
+			specified weekday in a month in a year.
+		gets data from table dayhours_X based on yearday numbers.
+		:year= int: 2021
+		:day= dayname
+		:month= monthname
+		:etype= 'E' or 'G'
+		```
 
 ## Run as service on linux
 - Instructions in [Systemd service on linux](docs/startupscript.md "Linux service instructions")

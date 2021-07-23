@@ -47,13 +47,14 @@ class all_graphs_view:
 
         self.elist = Youless.sql('energytypes')['list']  # retrieve energy types
 
-    def create_dash_page(self, ip, port, debug):
+    def create_dash_page(self, ip, port, debug, reloader):
         """
         Plot all information with plotly and dash
         """
         self.ip = ip
         self.port = port
         self.debug = debug
+        self.reloader = reloader
 
         # define the app
         app = dash.Dash(
@@ -159,7 +160,7 @@ class all_graphs_view:
         #     return json.dumps(fig_json, indent=2)
 
         # run the webserver
-        app.run_server(debug=self.debug, host=self.ip, port=self.port)
+        app.run_server(debug=self.debug, host=self.ip, port=self.port, use_reloader=self.reloader)
 
 
 def run_default():
@@ -168,8 +169,8 @@ def run_default():
     else:  # else run on the defined external IP
         ip = Dash_Settings.external_ip
 
-    logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG}")
-    all_graphs_view().create_dash_page(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG)  # go for it
+    logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
+    all_graphs_view().create_dash_page(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)  # go for it
 
 
 def main(**kwargs):
@@ -177,8 +178,8 @@ def main(**kwargs):
         run_default()
     else:  # run with provided settings
         Dash_Settings.DASHDEBUG = kwargs.get("debug")  # overwrite settings with given argument
-        logger.info(f"Starting Dash on {kwargs.get('ip')}:{kwargs.get('port')} with debug: {Dash_Settings.DASHDEBUG}")
-        all_graphs_view().create_dash_page(kwargs.get('ip'), kwargs.get('port'), Dash_Settings.DASHDEBUG)
+        logger.info(f"Starting Dash on {kwargs.get('ip')}:{kwargs.get('port')} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
+        all_graphs_view().create_dash_page(kwargs.get('ip'), kwargs.get('port'), Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)
 
 
 if __name__ == '__main__':
@@ -198,8 +199,9 @@ if __name__ == '__main__':
     python dash_allgraphs_live.py 192.168.0.5 8080 False
     """
 
-    if len(sys.argv) == 1 or len(sys.argv) >= 5:
+    if len(sys.argv) <= 1 or len(sys.argv) >= 5:
         print(default_usage)
+        sys.exit(1)
 
     ob = ip_validation()
 
