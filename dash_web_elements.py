@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
+    File name: dash_web_elements.py
+    Author: LouDFPV
+    Date created: 15/07/2021
+    Date last modified: 28/07/2021
+    Python Version: 3+
+    Tested on Version: 3.9
+
+    Description:
     This file returns web elements for both examples.
     The elements can be used and adapted for your own projects.
     It is not required.
 """
-import sys
-
 # Dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -24,6 +30,7 @@ Youless.youless_locale()
 
 
 class web_elements:
+    """this class contains presets for the dash examples"""
 
     __elements = {
         "css": {
@@ -37,10 +44,7 @@ class web_elements:
 
     @staticmethod
     def layout_with_intervals(*args):
-        """
-            returns the webapp layout for tables as arguments
-            returns intervals
-        """
+        """returns the webapp layout and intervals for tables as arguments"""
         return html.Div([
             html.Span(id='updatedb', style={'visibility': 'hidden'}),
             *args,
@@ -52,6 +56,11 @@ class web_elements:
             dcc.Interval(
                 id='interval-component-minute',
                 interval=60*1000,  # 60 seconds in milliseconds
+                n_intervals=0
+            ),
+            dcc.Interval(
+                id='interval-component-tenminutes',
+                interval=600*1000,  # 600 seconds (10 minutes) in milliseconds
                 n_intervals=0
             ),
             dcc.Interval(
@@ -78,9 +87,7 @@ class web_elements:
 
     @staticmethod
     def table_header(head, id1):
-        """
-            returns table with single graph and with title header
-        """
+        """returns table with single graph and with title header"""
         return dbc.Table([
             html.Tr([
                 html.Th(head, colSpan=2, scope="col")
@@ -92,9 +99,7 @@ class web_elements:
 
     @staticmethod
     def table_no_head(id1):
-        """
-            returns table with single graph no title header
-        """
+        """returns table with single graph no title header"""
         return dbc.Table([
             html.Tr([
                 html.Td(dcc.Graph(id=id1), style=web_elements.elements('css')['column_css'])
@@ -103,9 +108,7 @@ class web_elements:
 
     @staticmethod
     def dual_table(head, id1, id2):
-        """
-            returns table with two graphs side by side and with title header
-        """
+        """returns table with two graphs side by side and with title header"""
         return dbc.Table([
             html.Tr([
                 html.Th(head, colSpan=2, scope="col")
@@ -118,9 +121,7 @@ class web_elements:
 
     @staticmethod
     def dual_table_no_head(id1, id2):
-        """
-            returns table with two graphs side by side with no title header
-        """
+        """returns table with two graphs side by side with no title header"""
         return dbc.Table([
             html.Tr([
                 html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
@@ -130,11 +131,7 @@ class web_elements:
 
     @staticmethod
     def quad_table_header(head, id1, id2, id3, id4):
-        """
-            returns table with four graphs and with title header
-            two tables side by side and two tables below that
-            each row of two tables has a row header
-        """
+        """returns table with four graphs and with title header, two tables side by side and two tables below that. each row of two tables has a row header"""
         return dbc.Table([
             html.Tr([
                html.Th(head, colSpan=2, scope="col")
@@ -157,10 +154,7 @@ class web_elements:
 
     @staticmethod
     def quad_table_no_head(id1, id2, id3, id4):
-        """
-            returns table with four graphs with no headers
-            two tables side by side and two tables below that
-        """
+        """returns table with four graphs with no headers, two tables side by side and two tables below that"""
         return dbc.Table([
             html.Tr([
                 html.Td(dcc.Graph(id=id1), style=web_elements.elements('css', 'column_css')),
@@ -174,17 +168,14 @@ class web_elements:
 
     @staticmethod
     def elements(name, *args):
-        """
-            returns item from elements dictionary, add second argument to return dictionary from key
-            can be used either as web_elements.elements("keyname") and return its contents
-            or as web_elements.elements("keyname", "secondkeyname") and returns the dictionary within the dictionary
-            This will also work: web_elements.elements("keyname")["second_keyname"]["etc"]
+        """returns item from elements dictionary, add second argument to return dictionary from key
+
+        examples:
+            :web_elements.elements("keyname") -> returns its contents
+            :web_elements.elements("keyname", "secondkeyname") -> returns the dictionary within the dictionary
+            :web_elements.elements("keyname")["second_keyname"]["etc"] -> same as above
         """
         if (args == ()):
             return web_elements.__elements[name]
         else:
             return web_elements.__elements[name].get(args[0])  # only the first extra argument will be processed, others will be ignored
-
-
-if __name__ == '__main__':
-    sys.exit()

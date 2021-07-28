@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """
-    constants.py
+    File name: constants.py
+    Author: LouDFPV
+    Date created: 11/07/2021
+    Date last modified: 28/07/2021
+    Python Version: 3+
+    Tested on Version: 3.9
 
+    Description:
     Constants used by the package
+
     Runtime class: provides datetime
     YouLess class: provides configuration constants
 """
@@ -11,22 +18,20 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import division
 
-import sys
 import datetime
 import locale
 
-from .settings import Settings
+# get ip, language and path settings
+from LS120 import Settings
 
 # initialize logging
 import logging
 logger = logging.getLogger(__name__)
-logger.debug("constants.py loaded")
+logger.debug("constants loaded")
 
 
 class Runtime:
-    """
-        class to provide datetime to the package
-    """
+    """class to provide datetime to the package."""
 
     @staticmethod
     def td(request):
@@ -67,11 +72,13 @@ class Runtime:
 
 
 class Youless:
-    """
-        libraries and constants for the package
-    """
+    """libraries and constants for the package."""
 
-    live_dict = {'timelst': [], 'wattlst': []}  # dictionary for temporary storage of live values
+    # dictionary for temporary storage of live values
+    live_dict = {
+            'timelst': [],
+            'wattlst': []
+            }
 
     # Youless webpage links, locale, naming and css settings
     __web = {
@@ -87,7 +94,7 @@ class Youless:
         "JSON": "f=j&",  # json link
         "M": "m=",  # url represented in months (number) 1 to 12 and goes back 1 year, kWh for E and m3 for G
         "W": "d=",  # url represented per day, history goes back 70 days, Watt for E and ltr for G
-        "D": "h=",  # url represented in 20 parts of half an hour (10 hours total) with usage per minute, counting back from the current moment (last entry of page 1). Watt for E
+        "D": "h=",  # url represented in 20 parts of half an hour (10 hours total) with usage per minute, counting back from the current moment (last entry of page 1). Watt for E and ltr for G
         "H": "w=",  # url represented in 30 parts of 8 hours (10 days total) per part in 47 representations (10 minutes), counting back from the current moment -10mins (last entry of page 1). Watt for E and ltr for G
         "maxDayPage": 70,  # max for d=
         "minDayPage": 1,  # min for d=
@@ -95,14 +102,14 @@ class Youless:
         "minMonthPage": 1,  # min for m=
         "maxMinutePage": 20,  # max for h=
         "minMinutePage": 1,  # min for h=
-        "maxTenMinPage": 30,  # max for w=
-        "minTenMinPage": 1,  # min for w=
+        "max_tenminutepage": 30,  # max for w=
+        "min_tenminutepage": 1,  # min for w=
         "maxHour": 24,  # max hour in a day -1
         "minHour": 0,  # min hour in a day
         "maxMinute": 29,  # max minutes per part for h=
         "minMinute": 0,  # min minutes per part for h=
-        "minTen": 0,  # min entry for w=
-        "maxTen": 47,  # max entry for w=
+        "min_ten": 0,  # min entry for w=
+        "max_ten": 47,  # max entry for w=
     }
 
     # SQL dictionary
@@ -115,8 +122,8 @@ class Youless:
             "W": "Water usage in liters or cubic meters"
         },
         "dbtables": {  # Database table naming
-            "E": ('yeardays_e', 'dayhours_e'),  # tuple 0, 1, 3 #, 'dayminutes_e'),
-            "G": ('yeardays_g', 'dayhours_g')  # tuple 0, 1, 3 #, 'dayminutes_g'),
+            "E": ('yeardays_e', 'dayhours_e', 'daytenminutes_e'),  # tuple 0, 1, 2 #, 'dayminutes_e'),
+            "G": ('yeardays_g', 'dayhours_g', 'daytenminutes_g')  # tuple 0, 1, 2 #, 'dayminutes_g'),
             # "S": ('yeardays_s', 'dayhours_s'),  # tuple 0, 1
         },
         "av_select": {  # select yearday watt or liter for average calculation from dayhours_X
@@ -135,6 +142,17 @@ class Youless:
                     kwh TEXT NOT NULL
                 );
             """,
+            "yeardays_g":
+            """
+                CREATE TABLE yeardays_g (
+
+                    date TEXT NOT NULL PRIMARY KEY,
+                    year TEXT NOT NULL,
+                    month TEXT NOT NULL,
+                    monthname TEXT NOT NULL,
+                    m3 TEXT NOT NULL
+                );
+            """,
             "dayhours_e":
             """
                 CREATE TABLE dayhours_e (
@@ -146,21 +164,6 @@ class Youless:
                     day TEXT NOT NULL,
                     yearday TEXT NOT NULL,
                     watt TEXT NOT NULL
-                );
-            """,
-            "dayminutes_e":
-            """
-                "NON EXISTANT"
-            """,
-            "yeardays_g":
-            """
-                CREATE TABLE yeardays_g (
-
-                    date TEXT NOT NULL PRIMARY KEY,
-                    year TEXT NOT NULL,
-                    month TEXT NOT NULL,
-                    monthname TEXT NOT NULL,
-                    m3 TEXT NOT NULL
                 );
             """,
             "dayhours_g":
@@ -176,10 +179,34 @@ class Youless:
                     ltr TEXT NOT NULL
                 );
             """,
-            "dayminutes_g":
+            "daytenminutes_e":
             """
-                "NON EXISTANT"
+                CREATE TABLE daytenminutes_e (
+                    date TEXT NOT NULL PRIMARY KEY,
+                    year TEXT NOT NULL,
+                    week TEXT NOT NULL,
+                    month TEXT NOT NULL,
+                    monthname TEXT NOT NULL,
+                    day TEXT NOT NULL,
+                    yearday TEXT NOT NULL,
+                    watt TEXT NOT NULL
+                );
             """,
+            "daytenminutes_g":
+            """
+                CREATE TABLE daytenminutes_g (
+                    date TEXT NOT NULL PRIMARY KEY,
+                    year TEXT NOT NULL,
+                    week TEXT NOT NULL,
+                    month TEXT NOT NULL,
+                    monthname TEXT NOT NULL,
+                    day TEXT NOT NULL,
+                    yearday TEXT NOT NULL,
+                    ltr TEXT NOT NULL
+                );
+            """,
+            # INSERT OR IGNORE WORKS ONLY IF VALUES DO NOT GET UPDATED
+            # INSERT OR REPLACE WILL OVERWRITE EXISTING VALUES
             "i_dayhours":
             """
                 INSERT OR REPLACE INTO %s (date,year,week,month,monthname,day,yearday,%s)
@@ -189,6 +216,11 @@ class Youless:
             """
                 INSERT OR REPLACE INTO %s (date,year,month,monthname,%s)
                 VALUES(?,?,?,?,?)
+            """,
+            "i_daytenminutes":
+            """
+                INSERT OR REPLACE INTO %s (date,year,week,month,monthname,day,yearday,%s)
+                VALUES(?,?,?,?,?,?,?,?)
             """,
             "s_table":
             """
@@ -243,12 +275,12 @@ class Youless:
         ),
         "tenminutegraphtitle":
         (
-            "Verbruik per tien minuten:",
-            "Usage per ten minutes:",
+            "Verbruik per tien minuten: {} {}, {} {} uur",
+            "Usage per ten minutes: {} {}, {} {} hour",
         ),
         "customhourtitle": (
-            "%s %d t/m %d %d %s per uur, totaal verbruik: %g %s",
-            "%s %d - %d %d %s per hour, total usage: %g %s",
+            "%d t/m %d %s %d %s per uur, totaal verbruik: %g %s",
+            "%d - %d %s %d %s per hour, total usage: %g %s",
         ),
         "dayhourtitle":
         (
@@ -284,6 +316,16 @@ class Youless:
         (
             "Live Informatie Elektriciteit",
             "Live Electricity Information",
+        ),
+        "LIVE_TEN_E":
+        (
+            "Live Informatie Elektriciteit per 10 Minuten ",
+            "Live Electricity Information per 10 Minutes",
+        ),
+        "LIVE_TEN_G":
+        (
+            "Live Informatie Gas per 10 Minuten ",
+            "Live Gas Information per 10 Minutes",
         ),
         "TOYE":
         (
@@ -327,18 +369,17 @@ class Youless:
 
     @staticmethod
     def youless_locale():
-        """
-            returns the locale setting
-        """
+        """youless_locale() -> returns the locale setting from settings.py"""
         locale.setlocale(locale.LC_ALL, Settings.locale)
 
     @staticmethod
     def lang(text):
-        """
-            returns item from language dictionary
-            usage:
-            Youless.lang("keyname") returns the contents of the key
-            return value is either english or dutch based on the setting in the __web dictionary under LANG.
+        """returns item from language dictionary.
+
+        return value is either english or dutch based on the language setting in settings.py
+
+        example:
+            :Youless.lang("keyname") -> returns the contents of the key
         """
         if Youless.__web["LANG"] == "NL":
             return Youless.__lang[text][0]
@@ -347,28 +388,24 @@ class Youless:
 
     @staticmethod
     def sql(name):  # return items from sql dictionary
-        """
-            returns item from the sql dictionary
-            usage:
-            Youless.sql("keyname") returns contents of the key
-            For nested dictionaries use as followed:
-            Youless.sql("keyname")["2nd_keyname"]["etc"]
+        """returns item from the sql dictionary.
+
+        examples:
+            :Youless.sql("keyname") -> returns contents of the key
+            :Youless.sql("keyname")["2nd_keyname"]["etc"] -> returns nested dictionaries
         """
         return Youless.__sql[name]
 
     @staticmethod
-    def web(name, *args):
-        """
-            returns item from web dictionary, add second argument to return dictionary from key
-            can be used either as Youless.web("keyname") and return its contents
-            or as Youless.web("keyname", "secondkeyname") and returns the dictionary within the dictionary
-            This will also work: Youless.web("keyname")["second_keyname"]["etc"]
+    def web(name, *args):  # the else: does not really add anything only a test case for me
+        """returns item from web dictionary.
+
+        examples:
+            :Youless.web("keyname") -> returns contents of the key
+            :Youless.web("keyname")["second_keyname"]["etc"] -> returns contents of the key within the key
+            :Youless.web("keyname", "secondkeyname") -> same as above
         """
         if (args == ()):
             return Youless.__web[name]
         else:
             return Youless.__web[name].get(args[0])  # only the first extra argument will be processed, others will be ignored
-
-
-if __name__ == '__main__':
-    sys.exit()

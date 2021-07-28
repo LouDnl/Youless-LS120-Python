@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """
-    liveview_allgraphs.py
+    File name: dash_allgraphs_live.py
+    Author: LouDFPV
+    Date created: 15/07/2021
+    Date last modified: 28/07/2021
+    Python Version: 3+
+    Tested on Version: 3.9
 
+    Description:
     this is an example file that starts a dash/flask webserver:
-    - shows all graphs on one page
+    - run the file for command line arguments
+    - shows all available graphs on one page
     - graphs get updated by a scheduler
     - database gets updated by a scheduler
 """
+import datetime
 import sys
 
 # dash webpage
@@ -16,8 +24,8 @@ from dash.dependencies import Input, Output
 
 # Youless setup
 from LS120 import Runtime, Youless
-from LS120.plotly_graphs import plot_live, plot_data
-import LS120.import_data as db
+from LS120.plotly_graphs import plot_live, plot_dbdata
+import LS120.db_auto_import as db
 
 # Dash setup
 from dash_settings import Dash_Settings, ip_validation
@@ -34,23 +42,19 @@ Youless.youless_locale()
 
 # database variable
 update_db = 1
-while(update_db):  # update the database
-    db.main()  # update database always once on loading the file
-    update_db = 0
 
 
 class all_graphs_view:
+    """class to create dash page with all graphs from LS120.plotly_graphs.plot_data"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         global update_db
         update_db = -1
 
         self.elist = Youless.sql('energytypes')['list']  # retrieve energy types
 
     def create_dash_page(self, ip, port, debug, reloader):
-        """
-        Plot all information with plotly and dash
-        """
+        """Plot all information with plotly and dash"""
         self.ip = ip
         self.port = port
         self.debug = debug
@@ -64,13 +68,15 @@ class all_graphs_view:
 
         # define tables to show on page
         live_table = web_elements.dual_table(Youless.lang('LIVE'), "liveGraph", "minuteGraph")
+        live_ten_minutes_e_table = web_elements.table_header(Youless.lang('LIVE_TEN_E'), "e_tenMinuteGraph")
+        live_ten_minutes_g_table = web_elements.table_header(Youless.lang('LIVE_TEN_G'), "g_tenMinuteGraph")
         today_yesterday_table = web_elements.quad_table_header(Youless.lang('TOYE'), "e_today", "e_yesterday", "g_today", "g_yesterday")
         thismonth_lastmonth_table = web_elements.quad_table_header(Youless.lang('CMLM'), "e_currmonth", "e_lastmonth", "g_currmonth", "g_lastmonth")
         thisyear_lastyear_month_table = web_elements.quad_table_header(Youless.lang('TYLYM'), "e_year1", "e_year2", "g_year1", "g_year2")
         thisyear_lastyear_day_table = web_elements.quad_table_header(Youless.lang('TYLYD'), "e_fullyear1", "e_fullyear2", "g_fullyear1", "g_fullyear2")
 
         # define layout with defined tables
-        app.layout = web_elements.layout_with_intervals(live_table, today_yesterday_table, thismonth_lastmonth_table, thisyear_lastyear_month_table, thisyear_lastyear_day_table)
+        app.layout = web_elements.layout_with_intervals(live_table, live_ten_minutes_e_table, live_ten_minutes_g_table, today_yesterday_table, thismonth_lastmonth_table, thisyear_lastyear_month_table, thisyear_lastyear_day_table)
 
         # start callback with update interval
         @app.callback(  # update every 15 minutes (quarter hour)
@@ -103,14 +109,29 @@ class all_graphs_view:
             return fig
 
         # start callback with update interval
+        @app.callback(  # update every 10 minutes (600 seconds)
+            [
+                Output('e_tenMinuteGraph', 'figure'),
+                Output('g_tenMinuteGraph', 'figure'),
+            ],
+            [
+                Input('interval-component-tenminutes', 'n_intervals')
+            ]
+        )
+        def update_tenminutegraph(n):
+            fig1 = plot_live().plot_live_ten_minutes(etype='E', start=datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=2))  # 2 days back from today)
+            fig2 = plot_live().plot_live_ten_minutes(etype='G', start=datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=2))  # 2 days back from today)
+            return fig1, fig2
+
+        # start callback with update interval
         @app.callback(  # update every 30 minutes (half hour)
             Output('e_today', 'figure'),  # energy today output
             Output('g_today', 'figure'),  # gas today output
             Input('interval-component-halfhour', 'n_intervals')  # interval input
         )
         def update_halfhour(n):  # the callback function
-            fig1 = plot_data().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[0])  # plot energy today
-            fig2 = plot_data().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[1])  # plot gas today
+            fig1 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[0])  # plot energy today
+            fig2 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[1])  # plot gas today
             return fig1, fig2
 
         # start callback with update interval
@@ -136,20 +157,20 @@ class all_graphs_view:
             ]
         )
         def update_sixhours(n):  # the callback function
-            fig1 = plot_data().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[0])  # plot energy yesterday
-            fig2 = plot_data().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[1])  # plot gas yesterday
-            fig3 = plot_data().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[0])  # plot energy current month
-            fig4 = plot_data().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[0])  # plot energy last month
-            fig5 = plot_data().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[1])  # plot gas current month
-            fig6 = plot_data().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[1])  # plot gas last month
-            fig7 = plot_data().plot_year_month(Runtime.td('year_now'), self.elist[0])  # plot energy current year per month
-            fig8 = plot_data().plot_year_month(Runtime.td('last_year'), self.elist[0])  # plot energy last year per month
-            fig9 = plot_data().plot_year_month(Runtime.td('year_now'), self.elist[1])  # plot gas current year per month
-            fig10 = plot_data().plot_year_month(Runtime.td('last_year'), self.elist[1])  # plot gas last year per month
-            fig11 = plot_data().plot_year_day(Runtime.td('year_now'), self.elist[0])  # plot energy current year per day
-            fig12 = plot_data().plot_year_day(Runtime.td('last_year'), self.elist[0])  # plot energy last year per day
-            fig13 = plot_data().plot_year_day(Runtime.td('year_now'), self.elist[1])  # plot gas current year per day
-            fig14 = plot_data().plot_year_day(Runtime.td('last_year'), self.elist[1])  # plot gas last year per day
+            fig1 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[0])  # plot energy yesterday
+            fig2 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[1])  # plot gas yesterday
+            fig3 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[0])  # plot energy current month
+            fig4 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[0])  # plot energy last month
+            fig5 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[1])  # plot gas current month
+            fig6 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[1])  # plot gas last month
+            fig7 = plot_dbdata().plot_year_month(Runtime.td('year_now'), self.elist[0])  # plot energy current year per month
+            fig8 = plot_dbdata().plot_year_month(Runtime.td('last_year'), self.elist[0])  # plot energy last year per month
+            fig9 = plot_dbdata().plot_year_month(Runtime.td('year_now'), self.elist[1])  # plot gas current year per month
+            fig10 = plot_dbdata().plot_year_month(Runtime.td('last_year'), self.elist[1])  # plot gas last year per month
+            fig11 = plot_dbdata().plot_year_day(Runtime.td('year_now'), self.elist[0])  # plot energy current year per day
+            fig12 = plot_dbdata().plot_year_day(Runtime.td('last_year'), self.elist[0])  # plot energy last year per day
+            fig13 = plot_dbdata().plot_year_day(Runtime.td('year_now'), self.elist[1])  # plot gas current year per day
+            fig14 = plot_dbdata().plot_year_day(Runtime.td('last_year'), self.elist[1])  # plot gas last year per day
             return fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8, fig9, fig10, fig11, fig12, fig13, fig14
 
         # Display json structure in frame below graph
@@ -174,10 +195,15 @@ def run_default():
 
 
 def main(**kwargs):
+    global update_db
+    while(update_db):  # update the database
+        db.main()  # update database always once on loading the file
+        update_db = 0
     if "default" in kwargs and kwargs.get("default") is True:  # run with dash_settings.py
         run_default()
     else:  # run with provided settings
         Dash_Settings.DASHDEBUG = kwargs.get("debug")  # overwrite settings with given argument
+        Dash_Settings.RELOADER = kwargs.get("debug")  # overwrite settings with given argument
         logger.info(f"Starting Dash on {kwargs.get('ip')}:{kwargs.get('port')} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
         all_graphs_view().create_dash_page(kwargs.get('ip'), kwargs.get('port'), Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)
 

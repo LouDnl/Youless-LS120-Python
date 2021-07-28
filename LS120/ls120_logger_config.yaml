@@ -25,8 +25,11 @@ handlers:
         backupCount: 20
         encoding: utf8
 
+# WARNING 
+# setting the root level to DEBUG can make things very slow
+# but you will miss out on all the nice console and log spam
 root:
-    level: DEBUG
+    level: INFO
     handlers: [console, debug_file_handler]
     propogate: yes
 
