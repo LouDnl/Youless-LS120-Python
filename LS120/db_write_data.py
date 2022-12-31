@@ -3,21 +3,20 @@
     File name: db_write_data.py
     Author: LouDFPV
     Date created: 26/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file stores read data from a Youless LS120 device in to an existing sqlite3 database.
 """
-import sys
 import ast  # for converting string representation of a list to a list
+# initialize logging
+import logging
+import sys
 
 # Youless setup
 from LS120 import Youless, db_connect
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("db_write_data.py started")
 

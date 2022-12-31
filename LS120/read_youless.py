@@ -3,15 +3,16 @@
     File name: read_youless.py
     Author: LouDFPV
     Date created: 9/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file reads data from the youless returns it as a list
 """
-import sys
 import datetime
+# initialize logging
+import logging
+import sys
 
 # web
 import requests
@@ -19,8 +20,6 @@ import requests
 # Youless setup
 from LS120 import Youless
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("read_youless.py started")
 
@@ -145,7 +144,8 @@ class read_youless:
                 self.time = '%02d:%02d' % (hour, minute)  # str(self.date.time())[0:5]
                 self.value = int(self.api['val'][i])
                 logger.debug('Time: {} Usage: {} {}'.format(self.time, self.value, etype))
-                data[self.date.date().strftime('%Y-%m-%d')][1].insert(0, {self.time: self.value})
+                data[self.date.date().strftime('%Y-%m-%d')][1].insert(0, {self.time: self.value}) # BUG - key error on this line due to key trying to be in the future??
+                # BUG - youless date is one day ahead of real time
                 i += 1
             self.counter += 1
 

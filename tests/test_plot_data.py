@@ -3,19 +3,19 @@
     File name: test_plot_data.py
     Author: LouDFPV
     Date created: 26/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file tests the LS120.plot_data functions
 """
-import unittest
 import datetime
-from LS120.plotly_graphs.plot_data import plot_dbdata, plot_live
-
 # initialize logging
 import logging
+import unittest
+
+from LS120.plotly_graphs.plot_data import plot_dbdata, plot_live
+
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger('root')  # get root logger to override settings for testing
 logger.setLevel(20)  # 20 INF0 10 DEBUG (only for this file)

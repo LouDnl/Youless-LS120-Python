@@ -3,9 +3,8 @@
     File name: test_view.py
     Author: LouDFPV
     Date created: 15/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     this file tests views defined under graph_test.create_dash_page
@@ -13,24 +12,22 @@
     uses settings from dash_settings.py
 """
 import datetime
-
-# TODO - another random todo test
+# initialize logging
+import logging
 
 # dash
 import dash
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
-# Youless setup
-from LS120 import Runtime, Youless  # all settings
-from LS120.plotly_graphs import plot_dbdata, plot_live  # plots data from database and live reading
-
 # Dash setup
 from dash_settings import Dash_Settings
 from dash_web_elements import web_elements  # dash web page elements
+# Youless setup
+from LS120 import Runtime, Youless  # all settings
+from LS120.plotly_graphs import (  # plots data from database and live reading
+    plot_dbdata, plot_live)
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("dash_test_view.py started")
 

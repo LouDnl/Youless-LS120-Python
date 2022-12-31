@@ -3,25 +3,24 @@
     File name: dash_web_elements.py
     Author: LouDFPV
     Date created: 15/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file returns web elements for both examples.
     The elements can be used and adapted for your own projects.
     It is not required.
 """
+# initialize logging
+import logging
+
 # Dash
-import dash_core_components as dcc
-import dash_html_components as html
 import dash_bootstrap_components as dbc
+from dash import dcc, html
 
 # Youless setup
 from LS120.constants import Youless
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("web_elements.py started")
 

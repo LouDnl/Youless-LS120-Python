@@ -1,7 +1,8 @@
 # WORK IN PROGRESS
 This project is still in development.
 
-# Youless-LS120
+# Youless-LS120 v0.5.0
+For version information check the [CHANGELOG.md](CHANGELOG.md "CHANGELOG.md")
 
 ## Package
 This package is for importing data from a YouLess LS120 datalogger that is connected to a smart electricity and gas meter.
@@ -19,7 +20,7 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 	- This month and last month per day
 	- This year and last year per month
 	- This year and last year per day
-- Import and process Energy (Electricity and Gas) data from Youless LS120 into SQLite3 database 
+- Import and process Energy (Electricity and Gas) data from Youless LS120 into SQLite3 database
 	- All data is stored as text and converted when read from the database
 	- Data is stored in 6 separate tables, 3 per type (Electricity or Gas)
 	- *Appends and overwrites data if needed*
@@ -69,6 +70,7 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 
 ## Run as service on linux
 - Instructions in [Systemd service on linux](docs/startupscript.md "Linux service instructions")
+- This uses environment variables as settings and omits any settings from the python scripts
 
 ## Unittesting:
 - All functions can be tested with unittests found in [test](tests "tests")
@@ -92,7 +94,7 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 	- Buttons that click to available data
 	- Custom graphs based on available data. e.g. average electricity usage on wednesdays
 - Add option to use package with setup.py
-- Add possibility for users to configure settings.py
+- ~~Add possibility for users to configure settings.py~~
 - ~~Add live per ten minute function~~
 - ~~Add quick tutorial to create a linux service that always runs~~
 	- ~~Examples available in docs/startupscript.txt (No explanation yet)~~
@@ -107,8 +109,8 @@ While I oriented this on Dash it is ofcourse possible to use the data retrieved 
 - ~~Check if existing data in database matches retrieved data from Youless, if so then do nothing, else append~~
 - ~~Create automatic readout from LS120~~
 - ~~Make webpage available on linux server~~
- 
- 
+
+
 ## Some example views
 ![Realtime view](docs/liverealtime.png)\
 ![Live per minute](docs/liveminutes10hrs.png)\

@@ -3,23 +3,22 @@
     File name: db_create.py
     Author: LouDFPV
     Date created: 09/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file creates an sqlite3 database to store the youless data.
     It checks if the database exists, creates it if none existant and it does not overwrite an existing database.
     If database exists it checks if all tables are present, if not creates them.
 """
+# initialize logging
+import logging
 import os
 import sqlite3 as sl
 
 # Youless setup
 from LS120 import Settings, Youless
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("db_create.py started")
 
@@ -63,11 +62,12 @@ class youless_sql():
             e = int(run.fetchone()[0])  # returns 1 if exists
 
             rtn = True if (e != 0) else False  # 1 == True else False
-            logger.debug("table {} existence is {}".format(table, rtn))
+            logger.info("table {} existence is {}".format(table, rtn))
             return rtn
 
 
 def main():
+    logger.info("Using database file: {}".format(path))
     if not youless_sql.isSqlite3Db(path):
         logger.warning("Database {} non existant, creating database".format(Settings.dbname))
         for v in Youless.sql("dbtables").values():
@@ -77,11 +77,11 @@ def main():
                     con.execute(Youless.sql("queries")[i])
                     logger.warning("Table {} created".format(i))
     else:
-        logger.warning("Database {} exists, checking and creating tables".format(Settings.dbname))
+        logger.info("Database {} exists, checking and creating tables".format(Settings.dbname))
         for v in Youless.sql("dbtables").values():
             for i in v:
                 if (youless_sql.is_table_exists(i)):
-                    logger.warning("Table {} already exists, doing nothing".format(i))
+                    logger.info("Table {} already exists, doing nothing".format(i))
                 else:
                     logger.warning("Table {} does not exist, creating".format(i))
                     con = sl.connect(path)

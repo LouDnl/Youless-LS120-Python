@@ -3,26 +3,24 @@
     File name: plot_data.py
     Author: LouDFPV
     Date created: 15/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file converts data received in list form from db_retrieve_data.py and read_youless.py into a pandas dataframe and returns a plotly figure
 """
 import datetime
+# initialize logging
+import logging
 
 # pandas dataframe
 import pandas as pd
-
 # plotly figure
 import plotly.express as px
 
 # Youless setup
-from LS120 import Youless, Runtime, retrieve_data, read_youless
+from LS120 import Runtime, Youless, read_youless, retrieve_data
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("plot_data loaded")
 

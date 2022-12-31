@@ -3,18 +3,18 @@
     File name: test_db_retrieve_data.py
     Author: LouDFPV
     Date created: 25/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file tests the LS120.retrieve_dbdata functions
 """
-import unittest
-from LS120.db_retrieve_data import retrieve_data
-
 # initialize logging
 import logging
+import unittest
+
+from LS120.db_retrieve_data import retrieve_data
+
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger('root')  # get root logger to override settings for testing
 logger.setLevel(20)  # 20 INF0 10 DEBUG (only for this file)

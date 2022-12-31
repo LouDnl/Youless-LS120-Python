@@ -1,0 +1,14 @@
+*
+!/.github
+!/docs
+!/LS120
+!/LS120/plotly_graphs
+!/tests
+!.gitignore
+!.dockerignore
+!Dockerfile
+!*.py
+!*.md
+!ls120_logger_config.yaml
+!requirements.txt
+!Youless.code-workspace

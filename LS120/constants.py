@@ -3,9 +3,8 @@
     File name: constants.py
     Author: LouDFPV
     Date created: 11/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     Constants used by the package
@@ -13,19 +12,17 @@
     Runtime class: provides datetime
     YouLess class: provides configuration constants
 """
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import division
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import datetime
 import locale
+# initialize logging
+import logging
 
 # get ip, language and path settings
 from LS120 import Settings
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("constants loaded")
 

@@ -11,15 +11,16 @@
     This file retrieves data from youless sqlite3 database and returns it
 """
 import ast  # for converting string representation of a list to a list
-from datetime import datetime, timedelta
-from dateutil import parser
 import calendar
+# initialize logging
+import logging
+from datetime import datetime, timedelta
+
+from dateutil import parser
 
 # Youless setup
 from LS120 import Youless, db_connect
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("db_retrieve_data.py started")
 

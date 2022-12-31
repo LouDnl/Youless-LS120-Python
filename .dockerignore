@@ -1,0 +1,6 @@
+*
+!LS120
+!*.py
+!requirements.txt
+!docker-install/youless.db
+!docker-install/youless.sh

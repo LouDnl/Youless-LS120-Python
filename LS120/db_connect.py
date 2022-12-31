@@ -3,13 +3,14 @@
     File name: db_connect.py.py
     Author: LouDFPV
     Date created: 25/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     This file contains an internal class that connects to the database and returns the connection
 """
+# initialize logging
+import logging
 # sqlite
 import sqlite3 as sl
 from sqlite3.dbapi2 import OperationalError
@@ -17,8 +18,6 @@ from sqlite3.dbapi2 import OperationalError
 # Youless setup
 from LS120 import Settings
 
-# initialize logging
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("db_connect.py started")
 

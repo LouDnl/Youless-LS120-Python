@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/local/bin/python
 """
     File name: dash_allgraphs_live.py
     Author: LouDFPV
     Date created: 15/07/2021
-    Date last modified: 28/07/2021
     Python Version: 3+
-    Tested on Version: 3.9
+    Tested on Version: 3.10
 
     Description:
     this is an example file that starts a dash/flask webserver:
@@ -15,6 +14,10 @@
     - database gets updated by a scheduler
 """
 import datetime
+# initialize logging
+# from LS120 import logger
+import logging
+import os
 import sys
 
 # dash webpage
@@ -22,18 +25,14 @@ import dash
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
-# Youless setup
-from LS120 import Runtime, Youless
-from LS120.plotly_graphs import plot_live, plot_dbdata
 import LS120.db_auto_import as db
-
 # Dash setup
 from dash_settings import Dash_Settings, ip_validation
 from dash_web_elements import web_elements  # dash web page elements
+# Youless setup
+from LS120 import Runtime, Youless
+from LS120.plotly_graphs import plot_dbdata, plot_live
 
-# initialize logging
-# from LS120 import logger
-import logging
 logger = logging.getLogger(__name__)
 logger.debug("dash_allgraphs_live.py started")
 
@@ -183,36 +182,69 @@ class all_graphs_view:
         # run the webserver
         app.run_server(debug=self.debug, host=self.ip, port=self.port, use_reloader=self.reloader)
 
+def start_view(ip, port, debug, reloader):
+    logger.info(f"Starting Dash on {ip}:{port} with debug: {debug} and reloader: {reloader}")
+    all_graphs_view().create_dash_page(ip, port, debug, reloader)  # go for it
 
-def run_default():
-    if (Dash_Settings.DASHDEBUG):  # if True then run on 127.0.0.1
+def run_env():
+    global update_db
+    # first we need to setup and check the environment variables
+    youless = os.environ.get('YOULESS_IP')
+    ip      = os.environ.get('YOULESS_HOST')
+    port    = os.environ.get('YOULESS_PORT')
+    lang    = os.environ.get('YOULESS_LANG')
+    locale  = os.environ.get('YOULESS_LOCALE')
+    dbname  = os.environ.get('YOULESS_DBNAME')
+    dbpath  = os.environ.get('YOULESS_DBPATH')
+    if not (youless and ip and port and lang and locale and dbname and dbpath):
+        print("Missing critical environment variables")
+        sys.exit(1)  # exit if missing any of the vars
+    debug = False
+    reloader = False
+    start_view(ip, port, debug, reloader)
+
+def run_default(**kwargs):  # uses dash_settings.py
+    if (Dash_Settings.DASHDEBUG or "debug" in kwargs and kwargs.get("debug") is True):  # if True then run on 127.0.0.1
         ip = Dash_Settings.local_ip
+        Dash_Settings.DASHDEBUG = True
+        print("run_default debug true")
+        print(ip, Dash_Settings.DASHDEBUG)
     else:  # else run on the defined external IP
         ip = Dash_Settings.external_ip
 
-    logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
-    all_graphs_view().create_dash_page(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)  # go for it
+    print("starting with:")
+    print(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)
+    start_view(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)
+    # logger.info(f"Starting Dash on {ip}:{Dash_Settings.port} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
+    # all_graphs_view().create_dash_page(ip, Dash_Settings.port, Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)  # go for it
 
 
 def main(**kwargs):
     global update_db
     while(update_db):  # update the database
+        import LS120.db_create
+        LS120.db_create.main()
         db.main()  # update database always once on loading the file
         update_db = 0
-    if "default" in kwargs and kwargs.get("default") is True:  # run with dash_settings.py
-        run_default()
+    if "env" in kwargs and kwargs.get("env") is True:
+        run_env()
+    elif "default" in kwargs and kwargs.get("default") is True:  # run with dash_settings.py
+        if "debug" in kwargs and kwargs.get("debug") is True:
+            run_default(debug=True)
+        else:
+            run_default()
     else:  # run with provided settings
         Dash_Settings.DASHDEBUG = kwargs.get("debug")  # overwrite settings with given argument
         Dash_Settings.RELOADER = kwargs.get("debug")  # overwrite settings with given argument
         logger.info(f"Starting Dash on {kwargs.get('ip')}:{kwargs.get('port')} with debug: {Dash_Settings.DASHDEBUG} and reloader: {Dash_Settings.RELOADER}")
         all_graphs_view().create_dash_page(kwargs.get('ip'), kwargs.get('port'), Dash_Settings.DASHDEBUG, Dash_Settings.RELOADER)
 
-# TODO - testing todo's
 
 if __name__ == '__main__':
 
     default_usage = """Usage:
-    python dash_allgraphs_live.py default
+    python dash_allgraphs_live.py env or default
+    python dash_allgraphs_live.py default DEBUG
     python dash_allgraphs_live.py IP PORT DEBUG
 
     default = run with dash_settings.py configuration
@@ -221,7 +253,9 @@ if __name__ == '__main__':
     DEBUG = True or False for dash debug
 
     Examples:
+    python dash_allgraphs_live.py env
     python dash_allgraphs_live.py default
+    python dash_allgraphs_live.py default True
     python dash_allgraphs_live.py 127.0.0.1 80 True
     python dash_allgraphs_live.py 192.168.0.5 8080 False
     """
@@ -233,7 +267,16 @@ if __name__ == '__main__':
     ob = ip_validation()
 
     while(True):
-        if ob.valid_ip_address(sys.argv[1]) == "IPv4":  # check for valid IPv4 address
+        if ob.valid_ip_address(sys.argv[1]) == "Neither" and sys.argv[1].lower() == "env":  # run default configuration
+            main(env=True)
+            break
+        elif ob.valid_ip_address(sys.argv[1]) == "Neither" and sys.argv[1].lower() == "default":  # run default configuration
+            if sys.argv[2].lower() == "true":
+                main(default=True,debug=True)
+            else:
+                main(default=True)
+            break
+        elif ob.valid_ip_address(sys.argv[1]) == "IPv4":  # check for valid IPv4 address
             if int(sys.argv[2]) >= 1 and int(sys.argv[2]) <= 65535:  # check for valid port
                 if sys.argv[3].lower() == "true":  # run if debug is true
                     main(ip=sys.argv[1], port=sys.argv[2], debug=sys.argv[3].lower().capitalize())
@@ -247,9 +290,6 @@ if __name__ == '__main__':
             else:
                 print(default_usage)
                 break
-        elif ob.valid_ip_address(sys.argv[1]) == "Neither" and sys.argv[1].lower() == "default":  # run default configuration
-            main(default=True)
-            break
         else:
             print(default_usage)
             break

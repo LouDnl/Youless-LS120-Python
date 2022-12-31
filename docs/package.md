@@ -111,7 +111,7 @@ run this file to automatically import new data to the database `python3 LS120.db
         :month as integer
         :day as integer
         :table as string
-        ``` 
+        ```
     - `retrieve_data().retrieve_month(year, month, table)`
         ```
         Retrieve data from table yeardays_X and return list.
