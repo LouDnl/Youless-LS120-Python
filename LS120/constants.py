@@ -15,10 +15,12 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import datetime
 import locale
 # initialize logging
 import logging
+from datetime import datetime
+
+from dateutil.relativedelta import relativedelta
 
 # get ip, language and path settings
 from LS120 import Settings
@@ -32,40 +34,48 @@ class Runtime:
 
     @staticmethod
     def td(request):
-        dt = datetime.datetime.today()
+        dt = datetime.today()
 
-        if (request == 'dt'):
-            return dt
-        elif (request == 'current_date'):
-            return ("{:4d}-{:02d}-{:02d}".format(dt.year, dt.month, dt.day))
-        elif (request == 'current_time'):
-            return ("{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second))
-        elif (request == 'today'):
-            return ("{:4d},{:02d},{:02d}".format(dt.year, dt.month, dt.day))
-        elif (request == 'yesterday'):
-            return ("{:4d},{:02d},{:02d}".format(dt.year, dt.month, dt.day-1))
-        elif (request == 'seconds'):
-            return dt.second
-        elif (request == 'day_now'):
-            return dt.day
-        elif (request == 'day_yesterday'):
-            return dt.day-1
-        elif (request == 'month_now'):
-            return dt.month
-        elif (request == 'last_month'):
-            return dt.month-1
-        elif (request == 'year_now'):
-            return dt.year  # last two digits == %100
-        elif (request == 'last_year'):
-            return dt.year-1  # last year
-        elif (request == 'date_live'):
-            return dt.strftime("%A %d %B %Y")
-        elif (request == 'time_live'):
-            return dt.strftime("%H:%M")
-        elif (request == 'secs_live'):
-            return dt.strftime("%H:%M:%S")
-        else:
-            pass
+        match request:
+            case 'dt':
+                return dt
+            case 'current_date':
+                return ("{:4d}-{:02d}-{:02d}".format(dt.year, dt.month, dt.day))
+            case 'current_time':
+                return ("{:02d}:{:02d}:{:02d}".format(dt.hour, dt.minute, dt.second))
+            case 'today':
+                return ("{:4d},{:02d},{:02d}".format(dt.year, dt.month, dt.day))
+            case 'yesterday':
+                return ("{:4d},{:02d},{:02d}".format(dt.year, dt.month, dt.day-1))
+            case 'seconds':
+                return dt.second
+            case 'day_today':
+                return dt.day
+            case 'month_today':
+                return dt.month
+            case 'year_today':
+                return dt.year  # last two digits == %100
+            case 'date_today':
+                return dt.year, dt.month, dt.day
+            case 'date_yesterday':
+                dy = dt - relativedelta(days = 1)
+                return dy.year, dy.month, dy.day
+            case 'date_lastmonth':
+                lm = dt - relativedelta(months = 1)
+                return lm.year, lm.month, lm.day
+            case 'date_lastyear':
+                ly = dt - relativedelta(years = 1)  # last year
+                return ly.year, ly.month, ly.day
+            case 'date_twodaysback_midnight':
+                return (dt - relativedelta(days = 2)).replace(hour=0, minute=0, second=0, microsecond=0)
+            case 'date_live':
+                return dt.strftime("%A %d %B %Y")
+            case 'time_live':
+                return dt.strftime("%H:%M")
+            case 'secs_live':
+                return dt.strftime("%H:%M:%S")
+            case _:
+                pass
 
 
 class Youless:

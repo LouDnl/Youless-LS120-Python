@@ -13,7 +13,6 @@
     - graphs get updated by a scheduler
     - database gets updated by a scheduler
 """
-import datetime
 # initialize logging
 # from LS120 import logger
 import logging
@@ -118,8 +117,9 @@ class all_graphs_view:
             ]
         )
         def update_tenminutegraph(n):
-            fig1 = plot_live().plot_live_ten_minutes(etype='E', start=datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=2))  # 2 days back from today)
-            fig2 = plot_live().plot_live_ten_minutes(etype='G', start=datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=2))  # 2 days back from today)
+            date = Runtime.td('date_twodaysback_midnight')  # 2 days back from today at midnight
+            fig1 = plot_live().plot_live_ten_minutes(etype='E', start=date)
+            fig2 = plot_live().plot_live_ten_minutes(etype='G', start=date)
             return fig1, fig2
 
         # start callback with update interval
@@ -129,8 +129,9 @@ class all_graphs_view:
             Input('interval-component-halfhour', 'n_intervals')  # interval input
         )
         def update_halfhour(n):  # the callback function
-            fig1 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[0])  # plot energy today
-            fig2 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_now'), self.elist[1])  # plot gas today
+            date = Runtime.td('date_today')
+            fig1 = plot_dbdata().plot_day_hour(date[0], date[1], date[2], self.elist[0])  # plot energy today
+            fig2 = plot_dbdata().plot_day_hour(date[0], date[1], date[2], self.elist[1])  # plot gas today
             return fig1, fig2
 
         # start callback with update interval
@@ -156,20 +157,24 @@ class all_graphs_view:
             ]
         )
         def update_sixhours(n):  # the callback function
-            fig1 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[0])  # plot energy yesterday
-            fig2 = plot_dbdata().plot_day_hour(Runtime.td('year_now'), Runtime.td('month_now'), Runtime.td('day_yesterday'), self.elist[1])  # plot gas yesterday
-            fig3 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[0])  # plot energy current month
-            fig4 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[0])  # plot energy last month
-            fig5 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('month_now'), self.elist[1])  # plot gas current month
-            fig6 = plot_dbdata().plot_month_day(Runtime.td('year_now'), Runtime.td('last_month'), self.elist[1])  # plot gas last month
-            fig7 = plot_dbdata().plot_year_month(Runtime.td('year_now'), self.elist[0])  # plot energy current year per month
-            fig8 = plot_dbdata().plot_year_month(Runtime.td('last_year'), self.elist[0])  # plot energy last year per month
-            fig9 = plot_dbdata().plot_year_month(Runtime.td('year_now'), self.elist[1])  # plot gas current year per month
-            fig10 = plot_dbdata().plot_year_month(Runtime.td('last_year'), self.elist[1])  # plot gas last year per month
-            fig11 = plot_dbdata().plot_year_day(Runtime.td('year_now'), self.elist[0])  # plot energy current year per day
-            fig12 = plot_dbdata().plot_year_day(Runtime.td('last_year'), self.elist[0])  # plot energy last year per day
-            fig13 = plot_dbdata().plot_year_day(Runtime.td('year_now'), self.elist[1])  # plot gas current year per day
-            fig14 = plot_dbdata().plot_year_day(Runtime.td('last_year'), self.elist[1])  # plot gas last year per day
+            today =  Runtime.td('date_today')
+            yesterday = Runtime.td('date_yesterday')
+            lastmonth = Runtime.td('date_lastmonth')
+            lastyear = Runtime.td('date_lastyear')
+            fig1 = plot_dbdata().plot_day_hour(yesterday[0], yesterday[1], yesterday[2], self.elist[0])  # plot energy yesterday
+            fig2 = plot_dbdata().plot_day_hour(yesterday[0], yesterday[1], yesterday[2], self.elist[1])  # plot energy yesterday
+            fig3 = plot_dbdata().plot_month_day(today[0], today[1], self.elist[0])  # plot energy current month
+            fig4 = plot_dbdata().plot_month_day(lastmonth[0], lastmonth[1], self.elist[0])  # plot energy last month
+            fig5 = plot_dbdata().plot_month_day(today[0], today[1], self.elist[1])  # plot gas current month
+            fig6 = plot_dbdata().plot_month_day(lastmonth[0], lastmonth[1], self.elist[1])  # plot gas last month
+            fig7 = plot_dbdata().plot_year_month(today[0], self.elist[0])  # plot energy current year per month
+            fig8 = plot_dbdata().plot_year_month(lastyear[0], self.elist[0])  # plot energy last year per month
+            fig9 = plot_dbdata().plot_year_month(today[0], self.elist[1])  # plot gas current year per month
+            fig10 = plot_dbdata().plot_year_month(lastyear[0], self.elist[1])  # plot gas last year per month
+            fig11 = plot_dbdata().plot_year_day(today[0], self.elist[0])  # plot energy current year per day
+            fig12 = plot_dbdata().plot_year_day(lastyear[0], self.elist[0])  # plot energy last year per day
+            fig13 = plot_dbdata().plot_year_day(today[0], self.elist[1])  # plot gas current year per day
+            fig14 = plot_dbdata().plot_year_day(lastyear[0], self.elist[1])  # plot gas last year per day
             return fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8, fig9, fig10, fig11, fig12, fig13, fig14
 
         # Display json structure in frame below graph
@@ -196,11 +201,13 @@ def run_env():
     locale  = os.environ.get('YOULESS_LOCALE')
     dbname  = os.environ.get('YOULESS_DBNAME')
     dbpath  = os.environ.get('YOULESS_DBPATH')
+    dbg     = os.environ.get('YOULESS_DEBUG')
+    rld     = os.environ.get('YOULESS_RELOADER')
     if not (youless and ip and port and lang and locale and dbname and dbpath):
         print("Missing critical environment variables")
         sys.exit(1)  # exit if missing any of the vars
-    debug = False
-    reloader = False
+    debug = True if dbg is not None else False
+    reloader = True if rld is not None else False
     start_view(ip, port, debug, reloader)
 
 def run_default(**kwargs):  # uses dash_settings.py
@@ -271,7 +278,7 @@ if __name__ == '__main__':
             main(env=True)
             break
         elif ob.valid_ip_address(sys.argv[1]) == "Neither" and sys.argv[1].lower() == "default":  # run default configuration
-            if sys.argv[2].lower() == "true":
+            if len(sys.argv) == 3 and sys.argv[2].lower() == "true":
                 main(default=True,debug=True)
             else:
                 main(default=True)
