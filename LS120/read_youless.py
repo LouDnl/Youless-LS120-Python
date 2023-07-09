@@ -84,11 +84,12 @@ class read_youless:
                     m -= 60
                     h += 1
                 self.time = '%02d:%02d' % (h, m)  # str(self.date.time())[0:5]
-                self.watt = int(self.api['val'][i])
+                self.val = self.api['val'][i]
+                self.value = int(self.val) if self.val != '*' else int('0')
                 time.append(self.time)
-                watts.append(self.watt)
+                watts.append(self.value)
 
-                logger.debug('Time: {} Usage: {} Watt'.format(self.time, self.watt))
+                logger.debug('Time: {} Usage: {} Watt'.format(self.time, self.value))
                 i += 1
             self.counter -= 1
         data['time'] = time
@@ -142,7 +143,8 @@ class read_youless:
                     hour = 0
                     self.date += datetime.timedelta(days=1)
                 self.time = '%02d:%02d' % (hour, minute)  # str(self.date.time())[0:5]
-                self.value = int(self.api['val'][i])
+                self.val = self.api['val'][i]
+                self.value = int(self.val) if self.val != '*' else int('0')
                 logger.debug('Time: {} Usage: {} {}'.format(self.time, self.value, etype))
                 data[self.date.date().strftime('%Y-%m-%d')][1].insert(0, {self.time: self.value}) # BUG - key error on this line due to key trying to be in the future??
                 # BUG - youless date is one day ahead of real time
@@ -189,16 +191,17 @@ class read_youless:
             self.hours = self.min_hour
             for y, s in enumerate(raw_values):
                 try:
-                    raw_values[y] = s.strip()
-                    raw_values[y] = float(s.replace(',', '.'))
+                    value = s if s != '*' else '0.0'
+                    raw_values[y] = value.strip()
+                    raw_values[y] = float(value.replace(',', '.'))
                 except AttributeError:
                     pass
                 except IndexError:
                     break
                 finally:
                     lst.append(raw_values[y])
-            if raw_values[y] is None:
-                lst.pop()
+                    if raw_values[y] is None:
+                        lst.pop()
             strlst = '{}'.format(lst)
             task = (str(date), int(year), int(week_no), int(month_no), month_name, int(month_day), int(year_day), strlst)
             self.return_list.append(task)
@@ -235,16 +238,17 @@ class read_youless:
             lst = []
             for y, s in enumerate(raw_values):
                 try:
-                    raw_values[y] = s.strip()
-                    raw_values[y] = float(s.replace(',', '.'))
+                    value = s if s != '*' else '0.0'
+                    raw_values[y] = value.strip()
+                    raw_values[y] = float(value.replace(',', '.'))
                 except AttributeError:
                     pass
                 except IndexError:
                     break
                 finally:
                     lst.append(raw_values[y])
-            if raw_values[y] is None:
-                lst.pop()
+                    if raw_values[y] is None:
+                        lst.pop()
             strlst = '{}'.format(lst)
             task = (str(date), int(year), int(month_no), month_name, strlst)
             self.return_list.append(task)
